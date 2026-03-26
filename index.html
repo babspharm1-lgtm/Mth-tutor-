@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MTH Tutor — BABSPHARM</title>
+<title>MTH 102 Tutor — BABSPHARM CLOUD</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
 <style>
@@ -14,6 +14,23 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Level selector screen */
+#level-screen{position:fixed;inset:0;background:var(--accent);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;}
+#level-card{background:var(--card);border-radius:20px;padding:28px 22px;width:100%;max-width:360px;}
+.level-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);text-align:center;margin-bottom:4px;}
+.level-logo span{color:var(--gold);}
+.level-title{text-align:center;font-size:0.85rem;color:var(--muted);margin-bottom:22px;}
+.level-option{border:2px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;}
+.level-option:hover{border-color:var(--gold);background:var(--gold-light);}
+.level-option.selected{border-color:var(--gold);background:var(--gold-light);}
+.level-icon{font-size:1.5rem;flex-shrink:0;}
+.level-name{font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;color:var(--accent);}
+.level-desc{font-size:0.73rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.level-start{width:100%;background:var(--accent);color:var(--gold);border:none;border-radius:12px;padding:13px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;margin-top:6px;transition:all 0.2s;letter-spacing:0.5px;}
+.level-start:hover{background:var(--gold);color:var(--accent);}
+/* Level badge in header */
+#level-badge{font-size:0.6rem;padding:2px 8px;border-radius:20px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;border:1px solid rgba(201,168,76,0.4);color:rgba(201,168,76,0.8);}
 
 header{background:var(--accent);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--gold);letter-spacing:1px;}
@@ -121,16 +138,34 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
 </head>
 <body>
 
-<header>
-  <div class="logo">BABSPHARM<span> CLOUD</span></div>
-  <div class="badges"><div class="badge b101">MTH 101</div><div class="badge b102">MTH 102</div></div>
-</header>
-
-<div id="course-tabs">
-  <div class="ctab active" data-course="101">📗 MTH 101</div>
-  <div class="ctab" data-course="102">📘 MTH 102</div>
-  <div class="ctab" data-course="all">🔀 All</div>
+<!-- Level selector screen -->
+<div id="level-screen">
+  <div id="level-card">
+    <div class="level-logo">BABSPHARM<span> CLOUD</span></div>
+    <div class="level-title">MTH 101 & 102 Tutor — Select your level</div>
+    <div class="level-option" data-level="beginner" onclick="selectLevel(this)">
+      <div class="level-icon">🌱</div>
+      <div><div class="level-name">Beginner</div><div class="level-desc">I am new to this topic or find maths difficult. Explain everything from scratch in the simplest way possible.</div></div>
+    </div>
+    <div class="level-option" data-level="intermediate" onclick="selectLevel(this)">
+      <div class="level-icon">📘</div>
+      <div><div class="level-name">Intermediate</div><div class="level-desc">I have some knowledge. Teach me properly with clear examples and university-level depth.</div></div>
+    </div>
+    <div class="level-option" data-level="advanced" onclick="selectLevel(this)">
+      <div class="level-icon">🎓</div>
+      <div><div class="level-name">Advanced</div><div class="level-desc">I am confident. Give me full proofs, rigorous theory and hard exam-level problems.</div></div>
+    </div>
+    <button class="level-start" onclick="startWithLevel()">Start Learning →</button>
+  </div>
 </div>
+
+<header>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="logo">BABSPHARM<span> CLOUD</span></div>
+    <div id="level-badge" onclick="document.getElementById('level-screen').style.display='flex'">🌱 Beginner</div>
+  </div>
+  <div class="badges"><div class="badge b102">MTH 102 — Calculus</div></div>
+</header>
 
 <div id="topic-bar"></div>
 
@@ -171,39 +206,15 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
 
 <script>
 // ── Topic Curriculum Data ──────────────────────────────────────────────────
-// Each topic has a full ordered curriculum of subtopics the teacher must walk through
-const TOPICS = {
-  "101": [
-    { label:"Sets", topic:"Sets", subtopics:["What is a Set and Set Notation","Types of Sets (empty, finite, infinite, universal, singleton, equal sets)","Subsets and Power Sets","Set Operations: Union, Intersection, Difference, Complement","Cartesian Products","Venn Diagrams for 2 Sets","Venn Diagrams for 3 Sets","De Morgan's Laws","Counting Formula n(A∪B) and Applications"] },
-    { label:"Logic", topic:"Logic & Propositions", subtopics:["What is a Proposition and Truth Values","Negation, Conjunction, Disjunction","Implication (p→q): truth table and meaning","Biconditional (p↔q)","Tautology, Contradiction, Contingency","Laws of Logic (De Morgan's, Distributive, etc.)","Converse, Inverse, Contrapositive","Quantifiers (∀ and ∃)","Valid Arguments: Modus Ponens and Modus Tollens"] },
-    { label:"Number Theory", topic:"Number Theory", subtopics:["Prime Numbers and Composite Numbers","Prime Factorisation (Fundamental Theorem of Arithmetic)","Divisibility Rules (2,3,4,5,6,7,8,9,10,11)","Highest Common Factor (HCF) — listing and Euclidean Algorithm","Lowest Common Multiple (LCM)","Relationship: HCF × LCM = a × b","Modular Arithmetic and Congruences","Solving Linear Congruences"] },
-    { label:"Real Numbers", topic:"Real Number System", subtopics:["Number Sets: ℕ, ℤ, ℚ, Irrationals, ℝ","Field Axioms (Algebraic Properties)","Absolute Value and its Properties","Triangle Inequality","Open, Closed and Half-open Intervals","Linear Inequalities","Quadratic Inequalities (sign chart method)","Modulus Inequalities","AM-GM Inequality"] },
-    { label:"Surds & Indices", topic:"Surds and Indices", subtopics:["Laws of Indices (product, quotient, power, zero, negative)","Fractional Exponents (a^(m/n))","Simplifying Surds","Like and Unlike Surds","Operations on Surds (add, subtract, multiply)","Rationalising Monomial Surd Denominators","Rationalising Binomial Surd Denominators (using conjugate)"] },
-    { label:"Logarithms", topic:"Logarithms", subtopics:["Definition of Logarithm (logₐx = y ↔ aʸ = x)","Product Law of Logarithms","Quotient Law of Logarithms","Power Law of Logarithms","Special Values: logₐa=1, logₐ1=0","Change of Base Formula","Natural Logarithm (ln) and Common Logarithm (log₁₀)","Solving Exponential Equations","Solving Logarithmic Equations","Exponential Growth and Decay Applications"] },
-    { label:"Quadratics", topic:"Quadratic Equations", subtopics:["Standard Form ax²+bx+c=0","Method 1: Factorisation","Method 2: Completing the Square","Method 3: The Quadratic Formula","The Discriminant Δ=b²-4ac and Nature of Roots","Sum of Roots α+β = -b/a and Product of Roots αβ = c/a","Forming a Quadratic Equation from Given Roots","Equations Reducible to Quadratic Form","Quadratic Inequalities"] },
-    { label:"Polynomials", topic:"Polynomials", subtopics:["Definition, Degree, Leading Coefficient","Addition and Subtraction of Polynomials","Multiplication of Polynomials","Long Division of Polynomials","Synthetic Division","The Remainder Theorem","The Factor Theorem","Finding Unknown Coefficients","Completely Factorising Cubics","Vieta's Formulas for Quadratics and Cubics"] },
-    { label:"Partial Fractions", topic:"Partial Fractions", subtopics:["Proper vs Improper Rational Functions","Converting Improper Fractions by Long Division","Case 1: Distinct Linear Factors","Case 2: Repeated Linear Factors","Case 3: Irreducible Quadratic Factors","Cover-up Rule for Distinct Linear Factors","Combining Partial Fractions Back"] },
-    { label:"AP & GP", topic:"Sequences and Series", subtopics:["Introduction to Sequences","Arithmetic Progression (AP): Common Difference","AP: nth Term Formula Tₙ = a + (n-1)d","AP: Sum of n Terms Formula","Arithmetic Mean","Geometric Progression (GP): Common Ratio","GP: nth Term Formula Tₙ = arⁿ⁻¹","GP: Sum of n Terms","GP: Sum to Infinity (|r| < 1)","Geometric Mean","Recurring Decimals as Geometric Series","Sigma Notation Σ and Standard Results"] },
-    { label:"Binomial", topic:"Binomial Theorem", subtopics:["Pascal's Triangle and Binomial Coefficients ⁿCᵣ","The Binomial Expansion (a+b)ⁿ","The General Term Tᵣ₊₁ = ⁿCᵣ aⁿ⁻ʳ bʳ","Finding a Specific Term","Middle Term of Expansion","Term Independent of x","Binomial Theorem for Fractional/Negative n","Approximations Using Binomial Expansion"] },
-    { label:"Perm & Comb", topic:"Permutations and Combinations", subtopics:["The Counting Principle (Multiplication Rule)","Factorial Notation n!","Permutations nPr = n!/(n-r)!","Permutations of All n Objects","Permutations with Identical Objects","Circular Permutations (n-1)!","Combinations nCr = n!/r!(n-r)!","Properties of Combinations","Pascal's Identity","Real-life Selection and Arrangement Problems"] },
-    { label:"Probability", topic:"Probability", subtopics:["Experiments, Outcomes and Sample Space","Events and the Classical Probability Formula","Axioms of Probability","The Complement Rule P(A')=1-P(A)","Mutually Exclusive Events","The Addition Rule P(A∪B)","Independent Events","The Multiplication Rule P(A∩B)","Conditional Probability P(A|B)","Tree Diagrams","With and Without Replacement Problems"] },
-    { label:"Trigonometry", topic:"Trigonometry", subtopics:["Right-Triangle Ratios and SOHCAHTOA","Reciprocal Ratios (cosec, sec, cot)","The Unit Circle and All-Quadrant Angles (CAST Rule)","Reference Angles","Radian Measure and Degree-Radian Conversion","Exact Values (0°,30°,45°,60°,90°,180°)","The Three Pythagorean Identities","Compound Angle Formulas sin(A±B), cos(A±B), tan(A±B)","Double Angle Formulas","Half Angle Formulas","Solving Trigonometric Equations (Principal and General Solutions)","The Sine Rule","The Cosine Rule","Area of Triangle = ½ab sinC","Angle of Elevation and Depression / Bearings"] },
-    { label:"Coord. Geometry", topic:"Coordinate Geometry", subtopics:["Distance Formula","Midpoint Formula","Section Formula (Internal and External Division)","Gradient and Angle of Inclination","Equations of a Straight Line (5 forms)","Parallel and Perpendicular Lines","Distance from a Point to a Line","Equation of a Circle (Standard Form)","Equation of a Circle (General Form)","Finding Centre and Radius","Tangent to a Circle","The Parabola y²=4ax","Locus Problems"] },
-  ],
-  "102": [
-    { label:"Functions", topic:"Functions and Graphs", subtopics:["Definition of a Function, Domain, Codomain, Range","The Vertical Line Test","One-to-One (Injective) Functions","Onto (Surjective) Functions","Bijective Functions","Special Functions: Constant, Identity, Absolute Value, Piecewise","Composite Functions (f∘g)(x)","Domain of Composite Functions","Inverse Functions and the Horizontal Line Test","Finding the Inverse Function f⁻¹(x)","Even and Odd Functions","Graphical Transformations (shift, reflection, stretch)"] },
-    { label:"Limits", topic:"Limits and Continuity", subtopics:["Informal Definition of a Limit","Limit Laws (Sum, Product, Quotient, Power)","Evaluating Limits by Direct Substitution","Evaluating Limits by Factorisation","Evaluating Limits by Rationalisation","The Squeeze Theorem","One-sided Limits (Left-hand and Right-hand)","Limits at Infinity and Horizontal Asymptotes","Infinite Limits and Vertical Asymptotes","Indeterminate Forms","L'Hôpital's Rule","Continuity at a Point (3 Conditions)","Types of Discontinuity (Removable, Jump, Infinite)","The Intermediate Value Theorem (IVT)"] },
-    { label:"Differentiation", topic:"Differentiation", subtopics:["Derivative from First Principles","The Power Rule","The Constant and Sum Rules","The Product Rule d(uv)/dx = u'v + uv'","The Quotient Rule","The Chain Rule dy/dx = (dy/du)(du/dx)","Derivatives of sin x, cos x, tan x","Derivatives of cosec x, sec x, cot x","Derivatives of eˣ and aˣ","Derivatives of ln x and logₐx","Implicit Differentiation","Parametric Differentiation","Second and Higher Order Derivatives","Logarithmic Differentiation"] },
-    { label:"Applic. Diff.", topic:"Applications of Differentiation", subtopics:["Increasing and Decreasing Functions","Stationary Points (dy/dx = 0)","First Derivative Test","Second Derivative Test","Concavity (Concave Up and Down)","Points of Inflection","Curve Sketching (Full Algorithm)","Velocity and Acceleration","Related Rates Problems","Optimisation Problems (Area, Volume, Cost)","Linear Approximation (Tangent Line Approximation)"] },
-    { label:"Integration", topic:"Integration", subtopics:["Antiderivatives and Indefinite Integrals","The Constant of Integration C","The Power Rule for Integration ∫xⁿdx","Standard Integrals (trig, exponential, 1/x)","Linearity of Integration","The Substitution Method (u-substitution)","Integration by Parts ∫u dv = uv - ∫v du (LIATE Rule)","Definite Integrals","The Fundamental Theorem of Calculus Part 1","The Fundamental Theorem of Calculus Part 2","Properties of Definite Integrals","Definite Integrals of Even and Odd Functions"] },
-    { label:"Applic. Integ.", topic:"Applications of Integration", subtopics:["Area Under a Curve","Area Between Two Curves (in x)","Area Between Curves (in y)","Volume of Revolution about x-axis (Disc Method)","Volume of Revolution using Washer Method","Volume of Revolution about y-axis (Shell Method)","The Mean Value of a Function"] },
-    { label:"Vectors", topic:"Vectors", subtopics:["Scalars vs Vectors","Vector Notation and Types (free, position, unit, zero)","Vectors in 2D Component Form (ai + bj)","Vectors in 3D Component Form (ai + bj + ck)","Magnitude and Unit Vector","Direction Cosines","Vector Addition, Subtraction, Scalar Multiplication","The Dot Product (Scalar Product) — Formula and Geometry","Using Dot Product to Find Angle Between Vectors","Perpendicular and Parallel Vectors (using dot product)","The Cross Product (Vector Product) — Determinant Method","Geometric Meaning of Cross Product (area of parallelogram)","Scalar Triple Product","Vector Equations of a Line"] },
-    { label:"Matrices", topic:"Matrices", subtopics:["Definition and Order of a Matrix","Types of Matrices (row, column, square, identity, zero, diagonal, symmetric, skew-symmetric, triangular)","Matrix Addition and Subtraction","Scalar Multiplication of Matrices","Matrix Multiplication (method and conditions)","Transpose of a Matrix and its Properties","Determinant of a 2×2 Matrix","Determinant of a 3×3 Matrix (Cofactor Expansion)","Properties of Determinants","Minors and Cofactors","The Adjoint (Adjugate) Matrix","Inverse of a Matrix: A⁻¹ = adj(A)/det(A)","Singular Matrix (det = 0)","Properties of the Inverse Matrix"] },
-    { label:"Linear Eqns.", topic:"Systems of Linear Equations", subtopics:["Representing a System as Matrix Equation AX = B","The Augmented Matrix [A|B]","Elementary Row Operations","Gaussian Elimination Algorithm","Row Echelon Form (REF) and Back Substitution","Gauss-Jordan Elimination and RREF","Types of Solutions (Unique, Infinite, No Solution)","Rank of a Matrix","Cramer's Rule (2×2 and 3×3 systems)","Homogeneous Systems AX = 0"] },
-    { label:"Complex Nos.", topic:"Complex Numbers", subtopics:["The Imaginary Unit i and i² = -1","Complex Number z = a + bi","Real Part, Imaginary Part, Plotting on Argand Diagram","Complex Conjugate z̄ = a − bi","Modulus |z| = √(a²+b²)","Argument arg(z) = arctan(b/a) and Principal Argument","Operations: Addition, Subtraction, Multiplication, Division","Powers of i (the cycle i, -1, -i, 1)","Polar Form z = r(cosθ + i sinθ)","Euler's Formula e^(iθ) = cosθ + i sinθ","Multiplication and Division in Polar Form","De Moivre's Theorem","nth Roots of Complex Numbers","Cube Roots of Unity (1, ω, ω²) and Properties","Loci in the Argand Diagram"] },
-    { label:"Diff. Equations", topic:"Differential Equations", subtopics:["Definition: Order, Degree, General and Particular Solutions","Separable ODEs — Variables Separable Method","Linear First-Order ODE: dy/dx + P(x)y = Q(x)","Integrating Factor μ(x) = e^(∫P(x)dx)","Applications: Population Growth, Radioactive Decay, Newton's Cooling","Second-Order Linear ODE with Constant Coefficients: ay'' + by' + cy = 0","Auxiliary (Characteristic) Equation aλ² + bλ + c = 0","Case 1: Two Real Distinct Roots → CF = Ae^(λ₁x) + Be^(λ₂x)","Case 2: Repeated Real Roots → CF = (A + Bx)e^(λx)","Case 3: Complex Roots λ = α±βi → CF = e^(αx)(A cosβx + B sinβx)","Non-homogeneous ODE: ay'' + by' + cy = f(x)","Particular Integral (PI) by Undetermined Coefficients","General Solution = CF + PI","Initial Value Problems (IVPs)"] },
-  ]
-};
+const TOPICS = [
+    { label:"Functions", topic:"Functions of a Real Variable", subtopics:["What is a Function — Definition, Domain, Codomain, Range","Types of Functions: Constant, Identity, Absolute Value, Piecewise","One-to-One and Onto Functions","Composite Functions (f∘g)(x) and their Domains","Inverse Functions — finding f⁻¹(x)","Even and Odd Functions","Graphs of Standard Functions (linear, quadratic, cubic, rational, absolute value)","Graphical Transformations: Shift, Reflection, Stretch","Asymptotes of Rational Functions"] },
+    { label:"Limits", topic:"Limits and Continuity", subtopics:["Informal Meaning of a Limit — what lim[x→a]f(x)=L means","Limit Laws: Sum, Difference, Product, Quotient, Power","Evaluating Limits by Direct Substitution","Evaluating Limits by Factorisation and Cancellation","Evaluating Limits by Rationalisation","One-sided Limits: Left-hand and Right-hand","When a Limit Exists and When it Does Not","Limits at Infinity and Horizontal Asymptotes","Infinite Limits and Vertical Asymptotes","Indeterminate Forms and L'Hôpital's Rule","Continuity at a Point — the 3 Conditions","Types of Discontinuity: Removable, Jump, Infinite","The Intermediate Value Theorem (IVT)"] },
+    { label:"Differentiation", topic:"Techniques of Differentiation", subtopics:["The Derivative as Limit of Rate of Change — First Principles","Geometric Meaning: Gradient of Tangent to a Curve","The Power Rule d/dx(xⁿ) = nxⁿ⁻¹","The Constant Rule and Sum/Difference Rule","The Product Rule: d(uv)/dx = u'v + uv'","The Quotient Rule: d(u/v)/dx = (u'v - uv')/v²","The Chain Rule: dy/dx = (dy/du)(du/dx)","Derivatives of sin x, cos x, tan x, cosec x, sec x, cot x","Derivatives of eˣ, aˣ, ln x and logₐx","Implicit Differentiation","Second and Higher Order Derivatives"] },
+    { label:"Curve Sketching", topic:"Extreme Values and Curve Sketching", subtopics:["Increasing and Decreasing Functions using f'(x)","Stationary Points — where dy/dx = 0","Local Maximum and Minimum: First Derivative Test","Local Maximum and Minimum: Second Derivative Test","Concavity — Concave Up (f''>0) and Concave Down (f''<0)","Points of Inflection","Full Curve Sketching Algorithm","Absolute Maximum and Minimum on a Closed Interval","Optimisation Problems — maximum area, minimum cost, etc."] },
+    { label:"Integration", topic:"Methods of Integration", subtopics:["Integration as the Inverse of Differentiation — Antiderivatives","The Indefinite Integral and Constant of Integration C","The Power Rule: ∫xⁿdx = xⁿ⁺¹/(n+1) + C","Standard Integrals: ∫eˣ, ∫1/x, ∫sinx, ∫cosx, ∫sec²x","Linearity of Integration","Method 1: Integration by Substitution (u-substitution)","Method 2: Integration by Parts — ∫u dv = uv - ∫v du (LIATE rule)","Choosing the Right Method for a given integral"] },
+    { label:"Definite Integrals", topic:"Definite Integrals", subtopics:["Definition of the Definite Integral ∫ₐᵇf(x)dx","The Fundamental Theorem of Calculus Part 1","The Fundamental Theorem of Calculus Part 2: ∫ₐᵇf(x)dx = F(b) - F(a)","Properties of Definite Integrals","Evaluating Definite Integrals step by step","Definite Integrals of Even and Odd Functions"] },
+    { label:"Areas & Volumes", topic:"Applications to Areas and Volumes", subtopics:["Area Under a Curve: A = ∫ₐᵇ f(x)dx","Area When Curve is Below the x-axis","Area Between Two Curves: A = ∫ₐᵇ[f(x) - g(x)]dx","Finding Intersection Points of Two Curves","Area Between Curves in terms of y","Volume of Revolution — Disc Method: V = π∫ₐᵇ[f(x)]²dx","Volume — Washer Method for region between two curves","Volume of Revolution about the y-axis — Shell Method","Real-world Applications"] },
+];
 
 let activeTopic = null;
 let activeSubtopics = [];
@@ -211,6 +222,23 @@ let currentSubtopicIndex = 0;
 let activeCourse = '101';
 let activeMode = 'teach';
 let teachingInProgress = false;
+let studentLevel = 'beginner'; // beginner | intermediate | advanced
+let waitingForCorrectAnswer = false; // prevent moving on until student answers correctly
+
+// ── Level selector ────────────────────────────────────────────────────────
+function selectLevel(el) {
+  document.querySelectorAll('.level-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  studentLevel = el.dataset.level;
+}
+// Default select beginner
+document.querySelector('.level-option[data-level="beginner"]').classList.add('selected');
+
+function startWithLevel() {
+  const labels = {beginner:'🌱 Beginner', intermediate:'📘 Intermediate', advanced:'🎓 Advanced'};
+  document.getElementById('level-badge').textContent = labels[studentLevel];
+  document.getElementById('level-screen').style.display = 'none';
+}
 
 // ── Revision History ──────────────────────────────────────────────────────
 // Each entry: { topic, label, course, subtopicsTotal, subtopicsDone, date, status }
@@ -281,22 +309,21 @@ function hideProgress() {
 }
 
 // ── Render topics ─────────────────────────────────────────────────────────
-function renderTopics(course) {
+function renderTopics() {
   const bar = document.getElementById('topic-bar');
   bar.innerHTML = '';
   const allPill = document.createElement('div');
   allPill.className = 'topic-pill active';
-  allPill.textContent = '✦ All';
+  allPill.textContent = '✦ All Topics';
   allPill.onclick = () => {
     activeTopic = null; activeSubtopics = []; currentSubtopicIndex = 0; teachingInProgress = false;
     bar.querySelectorAll('.topic-pill').forEach(p => p.classList.remove('active'));
     allPill.classList.add('active');
     hideProgress();
-    appendAI(`All topics unlocked! Tell me what you want to study. I'll teach every single area of whatever topic you pick — one step at a time. 📚`);
+    appendAI(`All topics ready! Tap any topic pill above or just tell me what you want to study. 📚`);
   };
   bar.appendChild(allPill);
-  const list = course === 'all' ? [...TOPICS['101'], ...TOPICS['102']] : TOPICS[course];
-  list.forEach(data => {
+  TOPICS.forEach(data => {
     const pill = document.createElement('div');
     pill.className = 'topic-pill';
     pill.textContent = data.label;
@@ -324,20 +351,11 @@ function startTopic(data) {
   } else if (activeMode === 'summary') {
     send(`Give me a complete summary of ${data.topic}`);
   } else {
-    appendAI(`We're now on **${data.topic}**. What would you like — should I teach it, solve a problem, or test you? 🎓`);
+    appendAI(`We are now on **${data.topic}**. What would you like — should I teach it, solve a problem, or test you? 🎓`);
   }
 }
 
-document.querySelectorAll('.ctab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    activeCourse = tab.dataset.course;
-    renderTopics(activeCourse);
-    activeTopic = null; teachingInProgress = false; hideProgress();
-  });
-});
-renderTopics('101');
+renderTopics();
 
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -345,66 +363,69 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.classList.add('active');
     activeMode = btn.dataset.mode;
     const hints = {
-      teach:'Tap any topic pill and I\'ll teach you EVERYTHING in that topic, one area at a time in a real conversation. 🎓',
-      solve:'Type or paste your maths problem and I\'ll solve it step by step with full explanations. 🧮',
-      practice:'Tap a topic and I\'ll give you practice questions to test yourself! 📝',
-      exam:'Tap a topic and I\'ll give you exam tips, key formulas and past-question style problems. 🎯',
-      summary:'Tap a topic and I\'ll give you a complete, compact revision summary. ⚡'
+      teach:'Tap any topic pill and I will teach you everything in it, one area at a time. 🎓',
+      solve:'Type or paste your maths problem and I will solve it step by step. 🧮',
+      practice:'Tap a topic and I will give you practice questions to test yourself! 📝',
+      exam:'Tap a topic and I will give you exam tips, key formulas and university-style past questions. 🎯',
+      summary:'Tap a topic and I will give you a complete, compact revision summary. ⚡'
     };
     appendAI(hints[activeMode]);
   });
 });
 
 // ── Big system prompt ──────────────────────────────────────────────────────
-const SYSTEM_BASE = `You are Mr. BABS — the finest mathematics lecturer a 100-level Nigerian university student has ever had. You teach MTH 101 and MTH 102 to pharmacy and science students at BABSPHARM University.
+const SYSTEM_BASE = `You are Mr. BABS — the finest Calculus lecturer a 100-level Nigerian university student has ever had. You teach MTH 102 (Elementary Mathematics II — Calculus) to pharmacy and science students at BABSPHARM Cloud.
 
-CRITICAL — ACADEMIC LEVEL:
-You are teaching UNIVERSITY LEVEL mathematics, NOT secondary school or JAMB level. This means:
-- Use proper mathematical notation, rigorous definitions and formal language where appropriate
-- Show full proofs and derivations when teaching (e.g. derive the quadratic formula, prove De Morgan's laws, derive integration by parts from the product rule)
-- University exam questions require multi-step working, stated theorems, and precise notation
-- Worked examples must be at the difficulty level of 100-level university exam questions (OAU, UNILAG, FUTA, ABU, UNIBEN style)
-- Never oversimplify — students need to understand concepts deeply, not just memorise steps
-- Always state theorems formally before applying them
-- When solving, show EVERY line of working as expected in university examinations
+MTH 102 covers ONLY these 7 topics based on the official course syllabus:
+1. Functions of a Real Variable and Graphs
+2. Limits and Continuity
+3. Techniques of Differentiation (Derivative as limit of rate of change)
+4. Extreme Values and Curve Sketching
+5. Methods of Integration (Integration as inverse of differentiation)
+6. Definite Integrals
+7. Applications to Areas and Volumes
 
 YOUR CHARACTER:
 - Warm, patient, enthusiastic and encouraging like a real caring lecturer
 - You use CONVERSATIONAL language — you talk TO the student, not AT them
 - You never dump information. You break every lesson into BITE-SIZED pieces
-- You use relatable Nigerian examples: CGPA calculations, population growth models, Dangote's factory output, drug concentration in pharmacokinetics (relevant for pharmacy students!), distance and rates, etc.
-- You celebrate when students get things right: "Yes! That's it!", "Excellent!", "That's university-level thinking!"
-- You encourage when stuck: "This is a challenging concept — even strong students find it tricky", "Let me approach it differently..."
-- You always speak directly to the student using "you" and "we"
+- You use relatable Nigerian examples: drug concentration curves (pharmacy!), population growth, area of a farm, speed of a vehicle, market profit maximisation
+- You celebrate correct answers: "Yes! Excellent!", "Perfect!", "That is exactly right!"
+- You encourage when stuck: "Do not worry, this trips up many students. Let me try a different approach..."
+- You always speak to the student using "you" and "we"
 
-CONVERSATIONAL TEACHING STYLE (THIS IS THE MOST IMPORTANT RULE):
-When teaching any topic, you MUST NOT dump everything at once. Instead:
-1. Teach ONE sub-area at a time
-2. After explaining each area, PAUSE and ask the student a question to check understanding
-3. Wait for their response before continuing to the next area
-4. Respond to their answer warmly — correct mistakes gently, celebrate correct answers
-5. Then move to the next area naturally: "Great! Now let's move to the next part..."
-6. Keep the conversation flowing like a real tutoring session
+CRITICAL — NEVER MOVE ON WITHOUT CORRECT UNDERSTANDING:
+This is the most important rule. After you ask a check question:
+1. If the student gives a CORRECT answer → praise them warmly, then move to the next sub-area
+2. If the student gives a WRONG answer → DO NOT move on. Gently explain what was wrong, re-explain the concept in a different, simpler way, then ask the check question again
+3. If the student says "I don't understand", "explain again", or similar → re-explain using a completely different analogy or approach, then check again
+4. NEVER accept "I understand" or "okay" as proof of understanding — always make them answer an actual question before moving forward
+5. If a student fails the same check question twice → break it down even further into smaller steps and try again
 
-TEACHING STRUCTURE FOR EACH SUB-AREA:
-When teaching any sub-area, follow this pattern conversationally:
-- Give a relatable ANALOGY or real-world connection first
-- Then give the clear DEFINITION or CONCEPT
-- Then show the KEY FORMULA (if any) in LaTeX
-- Then walk through a WORKED EXAMPLE step by step
-- Ask a CHECK QUESTION to test understanding
-- React to their answer before moving on
+STUDENT LEVEL RULES (adapt your entire teaching style to the student's level):
+- BEGINNER: Assume ZERO prior knowledge. Start from absolute scratch. Use the simplest possible language. Avoid jargon — if you must use a technical word, define it immediately. Use lots of everyday analogies. Give extra simple examples before the formal ones. Go slower, be extra patient. Never assume they remember anything from secondary school.
+- INTERMEDIATE: Assume basic familiarity. Use proper mathematical language but still explain everything clearly. Give both simple and moderate examples. Connect to things they may have seen before.
+- ADVANCED: Use full mathematical rigour. Show formal proofs and derivations. Give university exam-level examples. Expect them to follow multi-step reasoning. Challenge them.
 
-RESPONSE FORMAT — Use these HTML tags for beautiful formatting:
-[ANALOGY]...[/ANALOGY] — for real-world analogies
-[DEFINE]...[/DEFINE] — for definitions
-[FORMULA]...[/FORMULA] — for formulas and key results
-[EXAMPLE]...[/EXAMPLE] — for worked examples
-[STEP]...[/STEP] — for each step in a solution
-[WARN]...[/WARN] — for common mistakes to avoid
-[TIP]...[/TIP] — for exam tips
-[CHECK]...[/CHECK] — for understanding check questions (with suggested reply options)
-[ANSWER]...[/ANSWER] — for answers/solutions
+CONVERSATIONAL TEACHING STRUCTURE (follow this for every sub-area):
+1. Say which part of the lesson you are on (e.g. "Okay, we are on Part 3 of our Sets lesson...")
+2. Give a real-world ANALOGY first (especially for beginners)
+3. Give the DEFINITION clearly
+4. Show the KEY FORMULA in LaTeX (if applicable)
+5. Walk through a WORKED EXAMPLE step by step
+6. Ask a specific CHECK QUESTION — make the student actually answer it, do not just ask "do you understand?"
+7. Respond to their answer (correct → move on, wrong → re-explain)
+
+RESPONSE FORMAT — use these tags:
+[ANALOGY]...[/ANALOGY]
+[DEFINE]...[/DEFINE]
+[FORMULA]...[/FORMULA]
+[EXAMPLE]...[/EXAMPLE]
+[STEP]...[/STEP]
+[WARN]...[/WARN]
+[TIP]...[/TIP]
+[CHECK]...[/CHECK]
+[ANSWER]...[/ANSWER]`;
 
 FULL SYLLABUS KNOWLEDGE:
 
@@ -427,40 +448,234 @@ POLYNOMIALS: degree, leading coefficient, operations, long division algorithm, s
 
 PARTIAL FRACTIONS: proper/improper, long division for improper, distinct linear factors A/(ax+b)+B/(cx+d), repeated linear A/(ax+b)+B/(ax+b)², irreducible quadratic (Ax+B)/(ax²+bx+c), equating coefficients and cover-up rule
 
-AP & GP: AP — d=a₂-a₁, Tₙ=a+(n-1)d, Sₙ=n/2[2a+(n-1)d], arithmetic mean=(a+b)/2. GP — r=a₂/a₁, Tₙ=arⁿ⁻¹, Sₙ=a(rⁿ-1)/(r-1), S∞=a/(1-r) for |r|<1, geometric mean=√(ab), recurring decimals. Σ notation, Σr=n(n+1)/2, Σr²=n(n+1)(2n+1)/6, Σr³=[n(n+1)/2]²
+AP & GP: not in MTH 102 syllabus — redirect student if asked.
 
-BINOMIAL: Pascal's triangle, ⁿCᵣ=n!/r!(n-r)!, (a+b)ⁿ=Σⁿᵣ₌₀ⁿCᵣaⁿ⁻ʳbʳ, general term Tᵣ₊₁=ⁿCᵣaⁿ⁻ʳbʳ, middle term, term independent of x, specific term, binomial for negative/fractional n, approximations
+MTH 102 — COMPLETE DEEP KNOWLEDGE BASE:
 
-PERMUTATIONS & COMBINATIONS: fundamental counting principle, n!, nPr=n!/(n-r)!, all n objects=n!, identical objects n!/p!q!, circular (n-1)!, nCr=n!/r!(n-r)!, nCr=nCn-r, Pascal's identity, arrangement/selection word problems
+════════════════════════════════════════
+TOPIC 1: FUNCTIONS OF A REAL VARIABLE
+════════════════════════════════════════
+DEFINITION: A function f from set A to set B is a rule that assigns to each element x in A exactly one element f(x) in B. Written f:A→B. Domain=A, Codomain=B, Range={f(x): x∈A} ⊆ B.
+VERTICAL LINE TEST: A graph represents a function iff every vertical line intersects it at most once.
+TYPES:
+- Constant function: f(x)=c, horizontal line, range={c}
+- Identity function: f(x)=x, gradient 1 through origin
+- Absolute value: f(x)=|x|=x if x≥0, -x if x<0. V-shape, vertex at origin. |x|=√(x²)
+- Piecewise: defined by different rules on different intervals. Evaluate by finding which piece x belongs to.
+- Polynomial: f(x)=aₙxⁿ+...+a₁x+a₀, domain=ℝ
+- Rational: f(x)=P(x)/Q(x), domain=ℝ\{x: Q(x)=0}
+- Square root: f(x)=√g(x), domain requires g(x)≥0
+- Logarithmic: f(x)=ln(g(x)), domain requires g(x)>0
+ONE-TO-ONE (INJECTIVE): f(x₁)=f(x₂) ⟹ x₁=x₂. Horizontal Line Test: every horizontal line hits graph at most once.
+ONTO (SURJECTIVE): Range = Codomain. Every y in B has at least one x with f(x)=y.
+BIJECTIVE: both one-to-one and onto. Inverse exists.
+COMPOSITE FUNCTIONS: (f∘g)(x)=f(g(x)). Domain of f∘g = {x in dom(g): g(x) in dom(f)}. NOT commutative: f∘g ≠ g∘f in general.
+INVERSE FUNCTION f⁻¹: exists iff f is one-to-one. To find: (1) write y=f(x), (2) swap x and y, (3) solve for y. Domain of f⁻¹ = Range of f. Range of f⁻¹ = Domain of f. Graph of f⁻¹ is reflection of graph of f in line y=x. f(f⁻¹(x))=x and f⁻¹(f(x))=x.
+EVEN FUNCTIONS: f(-x)=f(x) for all x. Symmetric about y-axis. Examples: x², cos x, |x|.
+ODD FUNCTIONS: f(-x)=-f(x) for all x. Symmetric about origin. Examples: x³, sin x, tan x, x.
+TRANSFORMATIONS: y=f(x)+k shifts UP k units. y=f(x)-k shifts DOWN. y=f(x-h) shifts RIGHT h. y=f(x+h) shifts LEFT h. y=-f(x) reflects in x-axis. y=f(-x) reflects in y-axis. y=af(x) vertical stretch by factor a. y=f(bx) horizontal stretch by factor 1/b.
+ASYMPTOTES: Vertical asymptote x=a when lim[x→a]f(x)=±∞ (denominator=0). Horizontal asymptote y=L when lim[x→±∞]f(x)=L. For rational P(x)/Q(x): if deg P < deg Q → y=0; if deg P = deg Q → y = leading coefficient ratio; if deg P > deg Q → no horizontal asymptote (oblique instead).
 
-PROBABILITY: sample space, P(A)=n(A)/n(S), axioms, complement P(A')=1-P(A), mutually exclusive P(A∩B)=0, addition rule P(A∪B)=P(A)+P(B)-P(A∩B), independent P(A∩B)=P(A)·P(B), conditional P(A|B)=P(A∩B)/P(B), multiplication rule, tree diagrams, with/without replacement
+════════════════════════════════════════
+TOPIC 2: LIMITS AND CONTINUITY
+════════════════════════════════════════
+INFORMAL DEFINITION: lim[x→a]f(x)=L means f(x) gets arbitrarily close to L as x approaches a (but x≠a). The value of f(a) is irrelevant.
+LIMIT LAWS (if lim f=L and lim g=M exist):
+- Sum: lim[f+g]=L+M
+- Difference: lim[f-g]=L-M
+- Product: lim[f·g]=L·M
+- Quotient: lim[f/g]=L/M (provided M≠0)
+- Power: lim[f(x)]ⁿ=Lⁿ
+- Constant: lim[c·f(x)]=cL
+- Root: lim√f(x)=√L (if L≥0)
+TECHNIQUES FOR EVALUATING LIMITS:
+1. DIRECT SUBSTITUTION: substitute x=a. If f(a) is defined and finite, that is the limit.
+2. FACTORISATION: if 0/0 form, factor numerator and denominator, cancel common factor, then substitute. Example: lim[x→2](x²-4)/(x-2) = lim[x→2](x+2)(x-2)/(x-2) = lim[x→2](x+2)=4.
+3. RATIONALISATION: multiply numerator and denominator by conjugate. Use when square roots cause 0/0. Example: lim[x→0](√(x+1)-1)/x — multiply by (√(x+1)+1)/(√(x+1)+1).
+4. STANDARD LIMITS: lim[x→0](sinx/x)=1, lim[x→0](1-cosx)/x=0, lim[x→0](eˣ-1)/x=1, lim[x→0]ln(1+x)/x=1, lim[x→∞](1+1/x)ˣ=e.
+5. SQUEEZE THEOREM: if g(x)≤f(x)≤h(x) near a and lim g=lim h=L, then lim f=L.
+ONE-SIDED LIMITS: Left-hand limit lim[x→a⁻]f(x): x approaches a from left. Right-hand limit lim[x→a⁺]f(x): x approaches a from right. Two-sided limit exists iff lim[x→a⁻]f(x) = lim[x→a⁺]f(x) = L.
+LIMITS AT INFINITY: lim[x→∞]f(x)=L means f(x)→L as x grows without bound. For polynomials: dominated by highest degree term. For rational functions: divide numerator and denominator by highest power of x in denominator. lim[x→∞]c/xⁿ=0 for n>0.
+INFINITE LIMITS: lim[x→a]f(x)=+∞ or -∞. Indicates vertical asymptote at x=a. To determine sign: test values just left and right of a.
+INDETERMINATE FORMS: 0/0, ∞/∞, 0·∞, ∞-∞, 0⁰, ∞⁰, 1^∞ — need further work; cannot evaluate directly.
+L'HÔPITAL'S RULE: If lim f(x)/g(x) gives 0/0 or ∞/∞, then lim f(x)/g(x) = lim f'(x)/g'(x) (differentiate numerator and denominator separately, NOT quotient rule). Can apply repeatedly. For 0·∞: rewrite as 0/(1/∞) or ∞/(1/0) to get 0/0 or ∞/∞ form.
+CONTINUITY AT A POINT x=a — THREE CONDITIONS MUST ALL HOLD:
+(1) f(a) is defined (exists)
+(2) lim[x→a]f(x) exists (both one-sided limits equal)
+(3) lim[x→a]f(x) = f(a)
+If any condition fails, f is DISCONTINUOUS at x=a.
+TYPES OF DISCONTINUITY:
+- Removable (hole): limit exists but ≠f(a) or f(a) undefined. Can "fill the hole".
+- Jump: left and right limits exist but are not equal.
+- Infinite: limit is ±∞ (vertical asymptote).
+- Oscillatory: function oscillates wildly (e.g. sin(1/x) at x=0).
+CONTINUITY ON AN INTERVAL: f is continuous on (a,b) if continuous at every point. Continuous on [a,b] if also right-continuous at a and left-continuous at b.
+INTERMEDIATE VALUE THEOREM (IVT): If f is continuous on [a,b] and N is any value strictly between f(a) and f(b), then there exists at least one c in (a,b) with f(c)=N. KEY APPLICATION: if f(a) and f(b) have opposite signs, there is a root between a and b.
 
-TRIGONOMETRY: SOHCAHTOA, cosec/sec/cot, unit circle, CAST, reference angles, radians, exact values, Pythagorean identities (sin²+cos²=1, 1+tan²=sec², 1+cot²=cosec²), compound angle sin(A±B) cos(A±B) tan(A±B), double angle sin2A cos2A tan2A, half angle, solving trig equations general solutions, sine rule, cosine rule, area=½absinC, elevation/depression/bearings
+════════════════════════════════════════
+TOPIC 3: TECHNIQUES OF DIFFERENTIATION
+════════════════════════════════════════
+DERIVATIVE FROM FIRST PRINCIPLES: f'(x) = lim[h→0] (f(x+h)-f(x))/h. This is the gradient of the tangent at x. Also written dy/dx, d/dx[f(x)], Df(x), ẏ.
+GEOMETRIC MEANING: f'(a) = gradient of tangent line to y=f(x) at point (a,f(a)). Equation of tangent: y-f(a)=f'(a)(x-a). Normal is perpendicular: gradient = -1/f'(a).
+DIFFERENTIABILITY: if f'(a) exists, f is differentiable at a. Differentiability ⟹ continuity (converse is FALSE). Not differentiable at corners, cusps, vertical tangents, discontinuities.
+BASIC RULES:
+- Constant: d/dx[c]=0
+- Power: d/dx[xⁿ]=nxⁿ⁻¹ (for all real n)
+- Constant multiple: d/dx[cf(x)]=cf'(x)
+- Sum/Difference: d/dx[f±g]=f'±g'
+PRODUCT RULE: d/dx[u·v] = u'v + uv'. Derive from first principles. Remember: "derivative of first times second PLUS first times derivative of second."
+QUOTIENT RULE: d/dx[u/v] = (u'v - uv')/v². Remember: "low d-high minus high d-low over low squared." (vdu-udv)/v².
+CHAIN RULE: if y=f(u) and u=g(x), then dy/dx = (dy/du)·(du/dx). Equivalently: d/dx[f(g(x))]=f'(g(x))·g'(x). The "outer function derivative times inner function derivative."
+DERIVATIVES OF TRIGONOMETRIC FUNCTIONS:
+d/dx[sin x]=cos x, d/dx[cos x]=-sin x, d/dx[tan x]=sec²x
+d/dx[cosec x]=-cosec x·cot x, d/dx[sec x]=sec x·tan x, d/dx[cot x]=-cosec²x
+(Derive sec x: write as (cos x)⁻¹, use chain rule)
+DERIVATIVES OF EXPONENTIAL FUNCTIONS:
+d/dx[eˣ]=eˣ (remarkable: derivative equals itself)
+d/dx[aˣ]=aˣ ln a (use aˣ=eˣ ln a, then chain rule)
+d/dx[e^(f(x))]=e^(f(x))·f'(x) by chain rule
+DERIVATIVES OF LOGARITHMIC FUNCTIONS:
+d/dx[ln x]=1/x (x>0)
+d/dx[ln|x|]=1/x (x≠0)
+d/dx[ln(f(x))]=f'(x)/f(x) by chain rule
+d/dx[logₐx]=1/(x ln a)
+IMPLICIT DIFFERENTIATION: when y is defined implicitly by equation F(x,y)=0. Differentiate both sides with respect to x, treating y as a function of x, so d/dx[y]=dy/dx, d/dx[y²]=2y·dy/dx (chain rule), etc. Collect dy/dx terms and solve. Example: x²+y²=r² → 2x+2y·dy/dx=0 → dy/dx=-x/y.
+SECOND DERIVATIVE: f''(x)=d²y/dx²=d/dx[f'(x)]. Measures rate of change of gradient. Third derivative f'''(x), etc.
+LOGARITHMIC DIFFERENTIATION: for products/quotients/powers of functions, take ln of both sides, differentiate implicitly, solve for dy/dx. Especially useful for y=[f(x)]^g(x).
 
-COORDINATE GEOMETRY: distance=√[(x₂-x₁)²+(y₂-y₁)²], midpoint, section formula, gradient m=(y₂-y₁)/(x₂-x₁), 5 line equations forms, parallel m₁=m₂, perpendicular m₁m₂=-1, point-to-line distance, circle (x-a)²+(y-b)²=r², general form x²+y²+2gx+2fy+c=0 centre(-g,-f) radius√(g²+f²-c), tangent⊥radius, parabola y²=4ax, locus
+════════════════════════════════════════
+TOPIC 4: EXTREME VALUES AND CURVE SKETCHING
+════════════════════════════════════════
+INCREASING/DECREASING: f is increasing on (a,b) if f'(x)>0 for all x in (a,b). Decreasing if f'(x)<0. Constant if f'(x)=0.
+CRITICAL POINTS: where f'(x)=0 or f'(x) does not exist. Every local extremum must be a critical point (Fermat's Theorem).
+STATIONARY POINTS: where f'(x)=0 specifically. Types: local max, local min, stationary point of inflection.
+FIRST DERIVATIVE TEST: at critical point x=c:
+- f' changes + to -: local MAXIMUM
+- f' changes - to +: local MINIMUM
+- f' does not change sign: stationary inflection point
+SECOND DERIVATIVE TEST: at stationary point where f'(c)=0:
+- f''(c)<0: local MAXIMUM (curve concave down)
+- f''(c)>0: local MINIMUM (curve concave up)
+- f''(c)=0: INCONCLUSIVE — use first derivative test
+CONCAVITY:
+- Concave UP on interval if f''(x)>0: curve bends upward, like a cup ∪
+- Concave DOWN on interval if f''(x)<0: curve bends downward, like a cap ∩
+POINTS OF INFLECTION: where concavity changes. Necessary condition: f''(x)=0 or f''(x) undefined. But must VERIFY sign change of f''. At inflection, tangent line crosses the curve.
+ABSOLUTE (GLOBAL) EXTREMA on CLOSED INTERVAL [a,b]: (Extreme Value Theorem: continuous f on [a,b] MUST have absolute max and min)
+Step 1: find all critical points in (a,b)
+Step 2: evaluate f at critical points AND at endpoints a and b
+Step 3: largest value = absolute max, smallest = absolute min
+CURVE SKETCHING ALGORITHM:
+1. Domain: find all x where f(x) is defined
+2. Intercepts: x-intercepts (set y=0), y-intercept (set x=0)
+3. Symmetry: even (y-axis), odd (origin), periodic
+4. Asymptotes: vertical (where denominator=0), horizontal (limits at ±∞), oblique
+5. First derivative: find f'(x), critical points, intervals of increase/decrease
+6. Second derivative: find f''(x), inflection points, intervals of concavity
+7. Plot key points and sketch
+OPTIMISATION PROBLEMS: translate word problem into a function to maximise or minimise. Steps: (1) identify the quantity Q to optimise, (2) express Q in terms of ONE variable using constraint, (3) find derivative, set to zero, (4) verify it is max or min using second derivative test, (5) answer the question with units.
+Common optimisation: area of rectangle/triangle, volume of box/cylinder, minimum cost, maximum profit, shortest distance.
 
-MTH 102:
-FUNCTIONS: definition f:A→B, domain/codomain/range, VLT, types (injective/surjective/bijective), constant/identity/absolute/piecewise, composite f∘g, inverse f⁻¹ (HLT, swap x and y), even f(-x)=f(x), odd f(-x)=-f(x), transformations (shift/reflect/stretch)
+════════════════════════════════════════
+TOPIC 5: METHODS OF INTEGRATION
+════════════════════════════════════════
+ANTIDERIVATIVE: F(x) is an antiderivative of f(x) if F'(x)=f(x). Antiderivatives differ by a constant: if F is one antiderivative, all others are F(x)+C.
+INDEFINITE INTEGRAL: ∫f(x)dx = F(x)+C where F'(x)=f(x). The +C (constant of integration) is ESSENTIAL.
+STANDARD INTEGRALS (must know ALL of these):
+∫xⁿdx = xⁿ⁺¹/(n+1) + C (n≠-1)
+∫x⁻¹dx = ∫(1/x)dx = ln|x| + C
+∫eˣdx = eˣ + C
+∫aˣdx = aˣ/ln a + C
+∫sin x dx = -cos x + C
+∫cos x dx = sin x + C
+∫sec²x dx = tan x + C
+∫cosec²x dx = -cot x + C
+∫sec x tan x dx = sec x + C
+∫cosec x cot x dx = -cosec x + C
+∫1/(1+x²)dx = arctan x + C
+∫1/√(1-x²)dx = arcsin x + C
+LINEARITY: ∫[af(x)+bg(x)]dx = a∫f(x)dx + b∫g(x)dx
+METHOD 1 — SUBSTITUTION (u-substitution):
+Use when integrand contains a function and its derivative (possibly with constant).
+Steps: (1) Choose u=g(x), (2) Find du=g'(x)dx so dx=du/g'(x), (3) Substitute to get integral purely in u, (4) Integrate with respect to u, (5) Back-substitute x.
+Key patterns: ∫f(g(x))g'(x)dx → let u=g(x). Examples:
+∫2x(x²+1)⁵dx → u=x²+1, du=2xdx → ∫u⁵du = u⁶/6+C = (x²+1)⁶/6+C
+∫cos(3x)dx → u=3x, du=3dx → (1/3)∫cos u du = (1/3)sin(3x)+C
+∫eˣ/(1+eˣ)dx → u=1+eˣ, du=eˣdx → ∫1/u du = ln|1+eˣ|+C
+METHOD 2 — INTEGRATION BY PARTS:
+∫u dv = uv - ∫v du (derived from product rule: d(uv)=u dv+v du)
+LIATE Rule for choosing u (choose the function that appears FIRST in this list):
+L — Logarithmic (ln x, log x)
+I — Inverse trig (arcsin, arctan)
+A — Algebraic (xⁿ, polynomials)
+T — Trigonometric (sin x, cos x)
+E — Exponential (eˣ, aˣ)
+Examples:
+∫x eˣ dx: u=x, dv=eˣdx → du=dx, v=eˣ → xeˣ-∫eˣdx = xeˣ-eˣ+C = eˣ(x-1)+C
+∫x sin x dx: u=x, dv=sin x dx → du=dx, v=-cos x → -x cos x+∫cos x dx = -x cos x+sin x+C
+∫ln x dx: u=ln x, dv=dx → du=1/x dx, v=x → x ln x-∫x·(1/x)dx = x ln x-x+C
+∫x²eˣdx: apply by parts TWICE.
+TABULAR METHOD: for ∫xⁿ·(trig or exp)dx, repeated integration by parts in table form.
+WHEN TO USE WHICH METHOD:
+- Standard form → standard integrals directly
+- Function inside function → try substitution
+- Product of two different types → integration by parts
+- Rational function → partial fractions (decompose first)
+- Trig powers → use trig identities (sin²x=(1-cos2x)/2, cos²x=(1+cos2x)/2)
 
-LIMITS: lim[x→a]f(x)=L, limit laws, substitution/factorisation/rationalisation/squeeze theorem, one-sided limits, existence condition, limits at infinity, infinite limits, L'Hôpital's (0/0 and ∞/∞), continuity 3 conditions, discontinuity types, IVT
+════════════════════════════════════════
+TOPIC 6: DEFINITE INTEGRALS
+════════════════════════════════════════
+DEFINITION: ∫ₐᵇf(x)dx = lim[n→∞] Σᵢ₌₁ⁿ f(xᵢ*)Δx (Riemann sum). Represents signed area between curve and x-axis from x=a to x=b.
+FUNDAMENTAL THEOREM OF CALCULUS PART 1 (FTC1): If f is continuous on [a,b], then F(x)=∫ₐˣf(t)dt is differentiable and F'(x)=f(x). Differentiation and integration are inverse operations.
+FUNDAMENTAL THEOREM OF CALCULUS PART 2 (FTC2): If f is continuous on [a,b] and F is any antiderivative of f, then ∫ₐᵇf(x)dx = F(b)-F(a) = [F(x)]ₐᵇ.
+EVALUATION: find antiderivative F(x), compute F(b)-F(a). The constant C cancels out.
+PROPERTIES OF DEFINITE INTEGRALS:
+∫ₐᵃf(x)dx = 0 (same limits)
+∫ₐᵇf(x)dx = -∫ᵦᵃf(x)dx (reversing limits changes sign)
+∫ₐᵇc·f(x)dx = c∫ₐᵇf(x)dx (constant factor)
+∫ₐᵇ[f(x)±g(x)]dx = ∫ₐᵇf(x)dx ± ∫ₐᵇg(x)dx (linearity)
+∫ₐᵇf(x)dx = ∫ₐᶜf(x)dx + ∫ᶜᵇf(x)dx (splitting interval)
+∫ₐᵇf(x)dx = ∫ₐᵇf(t)dt (dummy variable)
+EVEN AND ODD FUNCTIONS on [-a,a]:
+Even function f(-x)=f(x): ∫₋ₐᵃf(x)dx = 2∫₀ᵃf(x)dx (symmetry about y-axis)
+Odd function f(-x)=-f(x): ∫₋ₐᵃf(x)dx = 0 (symmetry about origin)
+SUBSTITUTION IN DEFINITE INTEGRALS: when substituting u=g(x), CHANGE THE LIMITS too: new lower limit=g(a), new upper limit=g(b). Then do NOT back-substitute.
+MEAN VALUE THEOREM FOR INTEGRALS: if f is continuous on [a,b], there exists c in (a,b) such that f(c)=(1/(b-a))∫ₐᵇf(x)dx. This value f(c) is the average value of f on [a,b].
 
-DIFFERENTIATION: f'(x)=lim[h→0](f(x+h)-f(x))/h, power rule, sum/difference, product rule, quotient rule, chain rule, d/dx(sinx)=cosx d/dx(cosx)=-sinx d/dx(tanx)=sec²x and other trig, d/dx(eˣ)=eˣ d/dx(aˣ)=aˣlna, d/dx(lnx)=1/x d/dx(logₐx)=1/(xlna), implicit, parametric, higher derivatives, logarithmic differentiation
-
-APPLICATIONS OF DIFFERENTIATION: f'(x)>0 increasing f'(x)<0 decreasing, stationary f'(x)=0, first derivative test (sign change), second derivative test (f''>0 min f''<0 max), concavity, inflection points, curve sketching algorithm, v=ds/dt a=dv/dt, related rates, optimisation, linear approximation f(x)≈f(a)+f'(a)(x-a)
-
-INTEGRATION: antiderivative F'(x)=f(x), ∫xⁿdx=xⁿ⁺¹/(n+1)+C, ∫x⁻¹dx=ln|x|+C, ∫eˣdx=eˣ+C, ∫sinx=-cosx, ∫cosx=sinx, ∫sec²x=tanx, u-substitution, integration by parts ∫udv=uv-∫vdu (LIATE), definite integral, FTC Part 1: d/dx∫ₐˣf(t)dt=f(x), FTC Part 2: ∫ₐᵇf(x)dx=F(b)-F(a), properties of definite integrals
-
-APPLICATIONS OF INTEGRATION: area A=∫ₐᵇf(x)dx, area between curves ∫ₐᵇ[f(x)-g(x)]dx, disc V=π∫ₐᵇ[f(x)]²dx, washer V=π∫ₐᵇ[(f(x))²-(g(x))²]dx, shell V=2π∫ₐᵇx·f(x)dx, mean value f̄=(1/(b-a))∫ₐᵇf(x)dx
-
-VECTORS: scalar vs vector, ai+bj+ck, |v|=√(a²+b²+c²), unit vector v̂=v/|v|, direction cosines, operations, dot product a·b=|a||b|cosθ=a₁b₁+a₂b₂+a₃b₃, perpendicular (dot=0), cross product determinant form, |a×b|=|a||b|sinθ, scalar triple product, vector equations of line r=a+tb
-
-MATRICES: all types, operations (add/subtract/multiply/transpose), det(2×2)=ad-bc, det(3×3) by cofactor expansion, properties, minors, cofactors, adjoint, inverse A⁻¹=adj(A)/det(A), singular (det=0)
-
-LINEAR EQUATIONS: AX=B, augmented matrix, EROs, Gaussian elimination, REF, back substitution, Gauss-Jordan RREF, solution types (unique/infinite/none), rank, Cramer's rule Xᵢ=det(Aᵢ)/det(A), homogeneous systems
-
-COMPLEX NUMBERS: z=a+bi, i²=-1, Re(z) Im(z), Argand diagram, z̄=a-bi, |z|=√(a²+b²), arg(z)=arctan(b/a) principal -π<θ≤π, operations, powers of i, polar form r(cosθ+isinθ), Euler's formula e^(iθ)=cosθ+isinθ, De Moivre's [r(cosθ+isinθ)]ⁿ=rⁿ(cosnθ+isinnθ), nth roots, cube roots of unity (1+ω+ω²=0), loci
-
-DIFFERENTIAL EQUATIONS: order/degree, separable ODEs f(y)dy=g(x)dx, linear first-order μ=e^(∫Pdx), second-order ay''+by'+cy=f(x), auxiliary equation aλ²+bλ+c=0, CF for 3 cases (distinct real, equal, complex roots), PI by undetermined coefficients, GS=CF+PI, IVPs, applications`;
+════════════════════════════════════════
+TOPIC 7: APPLICATIONS TO AREAS AND VOLUMES
+════════════════════════════════════════
+AREA UNDER A CURVE: A=∫ₐᵇf(x)dx gives SIGNED area. If f(x)≥0 on [a,b], this is the actual area. If f(x)<0 on part of [a,b], that part gives negative contribution. For TOTAL area: A=∫ₐᵇ|f(x)|dx — split integral at x-intercepts and take absolute value of each part.
+AREA BETWEEN TWO CURVES: If f(x)≥g(x) on [a,b]:
+A = ∫ₐᵇ[f(x)-g(x)]dx (top curve minus bottom curve)
+Steps: (1) Find intersection points (solve f(x)=g(x) for limits a,b if not given), (2) Determine which curve is on top, (3) Integrate (top-bottom).
+If curves cross within [a,b]: split into sub-intervals, on each determine which is on top.
+AREA BETWEEN CURVES (integrating with respect to y): when curves are functions of y (i.e. x=f(y)):
+A = ∫_c^d [f(y)-g(y)]dy (right curve minus left curve), limits c,d are y-values of intersection.
+VOLUMES OF REVOLUTION — DISC METHOD (about x-axis):
+When region under y=f(x) from x=a to x=b is rotated about x-axis:
+V = π∫ₐᵇ[f(x)]²dx
+Each cross-section is a disc with radius f(x) and area π[f(x)]².
+WASHER METHOD (about x-axis, region between two curves):
+When region between y=f(x) (outer) and y=g(x) (inner) is rotated about x-axis:
+V = π∫ₐᵇ{[f(x)]²-[g(x)]²}dx
+Each cross-section is a washer (disc with hole): area = π(R²-r²) where R=outer radius=f(x), r=inner radius=g(x).
+SHELL METHOD (about y-axis):
+When region under y=f(x) from x=a to x=b (with a≥0) is rotated about y-axis:
+V = 2π∫ₐᵇx·f(x)dx
+Each shell has radius x, height f(x), thickness dx.
+DISC METHOD ABOUT y-axis: express x as function of y, then V=π∫_c^d[f(y)]²dy.
+CHOOSING THE RIGHT METHOD:
+- Rotating about x-axis, using x as variable → disc/washer method
+- Rotating about y-axis, using x as variable → shell method (easier usually)
+- Rotating about y-axis, using y as variable → disc method (need to express x=f(y))
+SETTING UP PROBLEMS:
+1. Sketch the region clearly
+2. Identify axis of rotation
+3. Draw a representative slice (vertical → dx, horizontal → dy)
+4. Write radius/height in terms of the variable
+5. Set up and evaluate the integral`;
 
 // ── Chat Engine ────────────────────────────────────────────────────────────
 const chatEl = document.getElementById('chat');
@@ -595,7 +810,7 @@ The student has a problem to solve.
 - Key definitions, all important formulas in LaTeX, 3-5 key points, compact worked examples, common mistakes`;
   }
 
-  return SYSTEM_BASE + modeInstructions + `\n\nCURRENT TOPIC FOCUS: ${activeTopic || 'Any MTH 101/102 topic the student asks about'}`;
+  return SYSTEM_BASE + modeInstructions + `\n\n=== STUDENT LEVEL ===\nThis student has selected: ${studentLevel.toUpperCase()}. Adapt your ENTIRE teaching style, depth, language, and examples accordingly.\n\nCURRENT TOPIC FOCUS: ${activeTopic || 'Any MTH 102 topic the student asks about'}`;
 }
 
 async function send(rawText) {
@@ -606,7 +821,7 @@ async function send(rawText) {
   if (rawText.startsWith('START_TEACHING:')) {
     const topic = rawText.replace('START_TEACHING:', '');
     displayText = null;
-    apiText = `Hi Mr. BABS! I want to learn everything about ${topic}. Please start teaching me from the very beginning, covering every single area step by step.`;
+    apiText = `Hi Mr. BABS! I want to learn everything about ${topic}. My level is ${studentLevel}. Please start teaching me completely from scratch, assuming I know nothing, covering every single area step by step. Do not skip anything.`;
   }
 
   if (!apiText.trim() || sendBtn.disabled) return;
@@ -635,7 +850,7 @@ async function send(rawText) {
 
     // Advance subtopic index if teaching
     if (activeMode === 'teach' && activeTopic && teachingInProgress) {
-      const topicData = [...TOPICS['101'],...TOPICS['102']].find(t => t.topic === activeTopic);
+      const topicData = TOPICS.find(t => t.topic === activeTopic);
       if (topicData) {
         if (!rawText.startsWith('START_TEACHING:') && currentSubtopicIndex < topicData.subtopics.length) {
           currentSubtopicIndex = Math.min(currentSubtopicIndex + 1, topicData.subtopics.length);
@@ -672,24 +887,22 @@ inputEl.addEventListener('input', () => {
 // ── Welcome ───────────────────────────────────────────────────────────────
 setTimeout(() => {
   appendAI(
-`👋 **Welcome to BABSPHARM CLOUD! I'm Mr. BABS, your MTH 101 & 102 tutor.**
+`👋 **Welcome to BABSPHARM CLOUD! I'm Mr. BABS, your MTH 102 Calculus tutor.**
 
-I don't just give answers — I teach you properly, one step at a time, just like a real lecturer.
+I will teach you everything in MTH 102 properly — one step at a time, like a real lecturer.
 
-Here is how it works:
+**MTH 102 covers:**
+📌 Functions & Graphs · Limits & Continuity · Differentiation · Curve Sketching · Integration · Definite Integrals · Areas & Volumes
 
-🎓 **Teach Me** — Tap any topic and I will teach you every area of it, with examples and check questions as we go
+**Modes:**
+🎓 **Teach Me** — Full lesson on any topic, area by area
+🧮 **Solve Problem** — Step by step solution with explanation
+📝 **Practice** — Questions with marking and feedback
+🎯 **Exam Prep** — University-style past questions and tips
+⚡ **Summary** — Quick revision notes
 
-🧮 **Solve Problem** — Give me any maths problem and I will solve it step by step with full explanation
-
-📝 **Practice** — I will give you questions to test yourself and mark your answers
-
-🎯 **Exam Prep** — Key formulas, exam techniques and university-level past questions
-
-⚡ **Summary** — Quick revision notes for any topic
-
-**To begin:** Select a mode, then tap any topic pill above. Let's get to work! 📚`,
-    ['Teach me Sets', 'Teach me Quadratics', 'Teach me Differentiation']
+**To begin:** Select your mode then tap any topic above! 📚`,
+    ['🌱 Teach me Functions from scratch', 'Teach me Differentiation', 'Teach me Integration', '📖 Start from absolute basics']
   );
 }, 300);
 </script>
