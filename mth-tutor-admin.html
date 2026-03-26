@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTH Tutor Admin — BABSPHARM</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f4ef;--card:#fff;--accent:#1a1a2e;--gold:#c9a84c;--gold-light:#f5e9b8;
+  --text:#1a1a2e;--muted:#7a7a8a;--border:#e2ddd5;--green:#2d6a4f;--red:#c0392b;
+  --shadow:0 4px 24px rgba(26,26,46,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* Login screen */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-card{background:var(--card);border-radius:20px;padding:32px 24px;width:100%;max-width:380px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.login-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--accent);text-align:center;margin-bottom:4px;}
+.login-logo span{color:var(--gold);}
+.login-sub{text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:28px;}
+.login-label{font-size:0.78rem;font-weight:500;color:var(--muted);margin-bottom:6px;display:block;}
+.login-input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:0.88rem;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.2s;margin-bottom:16px;}
+.login-input:focus{border-color:var(--gold);}
+.btn-primary{width:100%;background:var(--accent);color:var(--gold);border:none;border-radius:10px;padding:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.btn-primary:hover{background:var(--gold);color:var(--accent);}
+.login-error{color:var(--red);font-size:0.78rem;text-align:center;margin-top:10px;display:none;}
+
+/* Admin layout */
+#admin-screen{display:none;min-height:100vh;flex-direction:column;}
+header{background:var(--accent);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;color:var(--gold);}
+.logo span{color:#fff;font-weight:400;}
+.admin-badge{font-size:0.62rem;background:rgba(201,168,76,0.2);border:1px solid var(--gold);color:var(--gold);padding:3px 9px;border-radius:20px;font-family:'Syne',sans-serif;font-weight:700;}
+.logout-btn{font-size:0.72rem;color:rgba(255,255,255,0.5);background:none;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.logout-btn:hover{color:#fff;border-color:rgba(255,255,255,0.4);}
+
+main{padding:18px 16px 40px;display:flex;flex-direction:column;gap:16px;max-width:680px;margin:0 auto;width:100%;}
+
+/* Section cards */
+.section-card{background:var(--card);border-radius:16px;padding:18px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.section-desc{font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+label{font-size:0.78rem;font-weight:500;color:var(--muted);display:block;margin-bottom:6px;}
+input[type=text],input[type=password],textarea,select{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.2s;resize:vertical;}
+input[type=text]:focus,input[type=password]:focus,textarea:focus,select:focus{border-color:var(--gold);}
+textarea{min-height:110px;line-height:1.6;}
+.field-group{margin-bottom:14px;}
+.field-group:last-child{margin-bottom:0;}
+
+.btn-save{background:var(--accent);color:var(--gold);border:none;border-radius:10px;padding:10px 20px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.btn-save:hover{background:var(--gold);color:var(--accent);}
+.btn-save:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-danger{background:rgba(192,57,43,0.08);color:var(--red);border:1px solid rgba(192,57,43,0.25);border-radius:10px;padding:9px 18px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;cursor:pointer;transition:all 0.2s;}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.btn-secondary{background:var(--bg);color:var(--accent);border:1.5px solid var(--border);border-radius:10px;padding:9px 18px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;cursor:pointer;transition:all 0.2s;}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+
+/* Status badge */
+.status{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-family:'Syne',sans-serif;font-weight:600;padding:3px 10px;border-radius:20px;}
+.status.ok{background:rgba(45,106,79,0.1);color:var(--green);}
+.status.error{background:rgba(192,57,43,0.08);color:var(--red);}
+.status.idle{background:rgba(122,122,138,0.1);color:var(--muted);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:var(--gold);font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;padding:10px 20px;border-radius:30px;box-shadow:0 8px 24px rgba(0,0,0,0.2);transition:transform 0.3s ease;z-index:999;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* Key reveal */
+.key-wrap{position:relative;}
+.key-wrap input{padding-right:44px;}
+.key-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;font-family:'DM Sans',sans-serif;}
+
+/* Instruction tags */
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.ins-tag{font-size:0.72rem;background:var(--gold-light);border:1px solid var(--gold);color:var(--accent);padding:3px 10px;border-radius:20px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;transition:all 0.15s;}
+.ins-tag:hover{background:var(--gold);color:#fff;}
+
+/* Stats */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-box{flex:1;min-width:80px;background:var(--bg);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border);}
+.stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--accent);}
+.stat-label{font-size:0.7rem;color:var(--muted);margin-top:2px;}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:14px 0;}
+
+/* Link preview */
+.link-preview{background:var(--bg);border-radius:10px;padding:10px 13px;border:1px solid var(--border);font-size:0.8rem;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.link-url{color:var(--blue, #1a4a7a);font-family:monospace;font-size:0.78rem;word-break:break-all;}
+.copy-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:0.72rem;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif;font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">BABS<span>PHARM</span></div>
+    <div class="login-sub">MTH Tutor Admin Panel</div>
+    <label class="login-label">Admin Password</label>
+    <input type="password" class="login-input" id="pwd-input" placeholder="Enter admin password…">
+    <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-screen">
+  <header>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="logo">MTH<span> Admin</span></div>
+      <div class="admin-badge">BABSPHARM</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Log out</button>
+  </header>
+
+  <main>
+
+    <!-- Stats -->
+    <div class="section-card">
+      <div class="section-title">📊 Overview</div>
+      <div class="stats-row" style="margin-top:10px;">
+        <div class="stat-box"><div class="stat-num" id="stat-topics">26</div><div class="stat-label">Topics</div></div>
+        <div class="stat-box"><div class="stat-num" id="stat-subtopics">174</div><div class="stat-label">Sub-areas</div></div>
+        <div class="stat-box"><div class="stat-num">2</div><div class="stat-label">Courses</div></div>
+        <div class="stat-box"><div class="stat-num">5</div><div class="stat-label">Modes</div></div>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="section-card">
+      <div class="section-title">🔑 Groq API Key</div>
+      <div class="section-desc">This key powers the AI tutor. Get yours free at <strong>console.groq.com</strong>. It is saved in your browser only — never sent anywhere else.</div>
+      <div class="field-group">
+        <label>API Key (starts with gsk_…)</label>
+        <div class="key-wrap">
+          <input type="password" id="groq-key" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx">
+          <button class="key-toggle" onclick="toggleKey()">Show</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn-save" onclick="saveKey()">Save Key</button>
+        <button class="btn-secondary" onclick="testKey()">Test Connection</button>
+        <span class="status idle" id="key-status"><span class="status-dot"></span> Not tested</span>
+      </div>
+    </div>
+
+    <!-- AI Persona -->
+    <div class="section-card">
+      <div class="section-title">🎓 AI Teacher Persona</div>
+      <div class="section-desc">Customise how Mr. BABS introduces himself and his teaching personality. This prepends to the system prompt.</div>
+      <div class="field-group">
+        <label>Teacher Name</label>
+        <input type="text" id="teacher-name" placeholder="Mr. BABS" value="Mr. BABS">
+      </div>
+      <div class="field-group">
+        <label>University Name</label>
+        <input type="text" id="uni-name" placeholder="BABSPHARM University" value="BABSPHARM University">
+      </div>
+      <div class="field-group">
+        <label>Teacher Personality (optional extra instruction)</label>
+        <textarea id="persona-extra" placeholder="e.g. Always start each lesson with a short motivational quote. Refer to students as 'Scholar'…"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-save" onclick="savePersona()">Save Persona</button>
+      </div>
+    </div>
+
+    <!-- Custom AI Instructions -->
+    <div class="section-card">
+      <div class="section-title">📝 Custom AI Instructions</div>
+      <div class="section-desc">Add special instructions that the AI must always follow when teaching. These are injected into every session. Use the quick tags below or write your own.</div>
+      <div class="tag-row">
+        <div class="ins-tag" onclick="insertTag('Always give at least 3 worked examples per sub-area.')">3 examples minimum</div>
+        <div class="ins-tag" onclick="insertTag('After every explanation, ask a short quiz question.')">Ask quiz after each area</div>
+        <div class="ins-tag" onclick="insertTag('Focus on OAU 100-level exam style questions only.')">OAU exam style</div>
+        <div class="ins-tag" onclick="insertTag('Use pharmacokinetics and drug-related examples wherever possible.')">Pharmacy examples</div>
+        <div class="ins-tag" onclick="insertTag('Always write out full proofs — never skip derivation steps.')">Full proofs always</div>
+        <div class="ins-tag" onclick="insertTag('Keep explanations very short and simple — students are beginners.')">Beginner-friendly</div>
+        <div class="ins-tag" onclick="insertTag('Remind students of exam time limits and marking schemes.')">Exam reminders</div>
+        <div class="ins-tag" onclick="insertTag('Speak in a mix of English and Nigerian Pidgin to feel relatable.')">Pidgin mix</div>
+      </div>
+      <textarea id="custom-instructions" placeholder="Type your custom instructions here… These will be added to every AI session."></textarea>
+      <div class="btn-row">
+        <button class="btn-save" onclick="saveInstructions()">Save Instructions</button>
+        <button class="btn-danger" onclick="clearInstructions()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Tutor Link -->
+    <div class="section-card">
+      <div class="section-title">🚀 Tutor Link</div>
+      <div class="section-desc">Share this link with your students. Make sure you have saved your API key above first.</div>
+      <div class="link-preview">
+        <span class="link-url" id="tutor-link">Set your GitHub Pages URL below</span>
+        <button class="copy-btn" onclick="copyLink()">Copy</button>
+      </div>
+      <div class="field-group" style="margin-top:12px;">
+        <label>Your GitHub Pages URL (e.g. https://username.github.io/mth-tutor)</label>
+        <input type="text" id="pages-url" placeholder="https://username.github.io/mth-tutor" oninput="updateLink()">
+      </div>
+    </div>
+
+    <!-- Groq Model -->
+    <div class="section-card">
+      <div class="section-title">⚙️ AI Model Settings</div>
+      <div class="section-desc">Choose the Groq model to power the tutor. Llama 3.3 70B gives the best results for teaching.</div>
+      <div class="field-group">
+        <label>Model</label>
+        <select id="groq-model">
+          <option value="llama-3.3-70b-versatile" selected>llama-3.3-70b-versatile (Recommended ✓)</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Faster, lighter)</option>
+          <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+          <option value="gemma2-9b-it">gemma2-9b-it</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Max Response Length (tokens)</label>
+        <select id="max-tokens">
+          <option value="800">800 — Concise</option>
+          <option value="1000" selected>1000 — Balanced (Recommended ✓)</option>
+          <option value="1500">1500 — Detailed</option>
+          <option value="2000">2000 — Very detailed</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn-save" onclick="saveModelSettings()">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="section-card" style="border-color:rgba(192,57,43,0.2);">
+      <div class="section-title" style="color:var(--red);">⚠️ Danger Zone</div>
+      <div class="section-desc">Reset all admin settings back to default. This cannot be undone.</div>
+      <button class="btn-danger" onclick="resetAll()">Reset All Settings</button>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast">✓ Saved!</div>
+
+<script>
+// ── Auth ───────────────────────────────────────────────────────────────────
+// Change this password to whatever you want
+const ADMIN_PASSWORD = 'babspharm2024';
+
+function doLogin() {
+  const pwd = document.getElementById('pwd-input').value;
+  if (pwd === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'flex';
+    loadAllSettings();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+document.getElementById('pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pwd-input').value = '';
+}
+
+// ── Storage helpers ────────────────────────────────────────────────────────
+function save(key, val) { localStorage.setItem('mth_admin_' + key, val); }
+function load(key, def='') { return localStorage.getItem('mth_admin_' + key) || def; }
+
+function loadAllSettings() {
+  document.getElementById('groq-key').value = load('groq_key');
+  document.getElementById('teacher-name').value = load('teacher_name', 'Mr. BABS');
+  document.getElementById('uni-name').value = load('uni_name', 'BABSPHARM University');
+  document.getElementById('persona-extra').value = load('persona_extra');
+  document.getElementById('custom-instructions').value = load('custom_instructions');
+  document.getElementById('groq-model').value = load('groq_model', 'llama-3.3-70b-versatile');
+  document.getElementById('max-tokens').value = load('max_tokens', '1000');
+  document.getElementById('pages-url').value = load('pages_url');
+  updateLink();
+  const keyStatus = load('key_status', 'idle');
+  setKeyStatus(keyStatus);
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg = '✓ Saved!') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── API Key ────────────────────────────────────────────────────────────────
+function toggleKey() {
+  const inp = document.getElementById('groq-key');
+  const btn = inp.nextElementSibling;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+  else { inp.type = 'password'; btn.textContent = 'Show'; }
+}
+
+function saveKey() {
+  const key = document.getElementById('groq-key').value.trim();
+  if (!key) { showToast('⚠️ Enter a key first'); return; }
+  save('groq_key', key);
+  showToast('🔑 API Key saved!');
+}
+
+function setKeyStatus(status) {
+  const el = document.getElementById('key-status');
+  if (status === 'ok') {
+    el.className = 'status ok'; el.innerHTML = '<span class="status-dot"></span> Connected ✓';
+  } else if (status === 'error') {
+    el.className = 'status error'; el.innerHTML = '<span class="status-dot"></span> Failed — check key';
+  } else {
+    el.className = 'status idle'; el.innerHTML = '<span class="status-dot"></span> Not tested';
+  }
+  save('key_status', status);
+}
+
+async function testKey() {
+  const key = document.getElementById('groq-key').value.trim();
+  if (!key) { showToast('⚠️ Enter a key first'); return; }
+  setKeyStatus('idle');
+  showToast('⏳ Testing connection…');
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({
+        model: document.getElementById('groq-model').value,
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Say OK' }]
+      })
+    });
+    if (res.ok) { setKeyStatus('ok'); showToast('✅ Connection successful!'); }
+    else { setKeyStatus('error'); showToast('❌ Key rejected by Groq'); }
+  } catch {
+    setKeyStatus('error'); showToast('❌ Network error');
+  }
+}
+
+// ── Persona ────────────────────────────────────────────────────────────────
+function savePersona() {
+  save('teacher_name', document.getElementById('teacher-name').value.trim() || 'Mr. BABS');
+  save('uni_name', document.getElementById('uni-name').value.trim() || 'BABSPHARM University');
+  save('persona_extra', document.getElementById('persona-extra').value.trim());
+  showToast('🎓 Persona saved!');
+}
+
+// ── Instructions ───────────────────────────────────────────────────────────
+function insertTag(text) {
+  const ta = document.getElementById('custom-instructions');
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + '\n- ' + text : '- ' + text;
+  ta.focus();
+}
+
+function saveInstructions() {
+  save('custom_instructions', document.getElementById('custom-instructions').value.trim());
+  showToast('📝 Instructions saved!');
+}
+
+function clearInstructions() {
+  if (confirm('Clear all custom instructions?')) {
+    document.getElementById('custom-instructions').value = '';
+    save('custom_instructions', '');
+    showToast('🗑️ Cleared');
+  }
+}
+
+// ── Model settings ─────────────────────────────────────────────────────────
+function saveModelSettings() {
+  save('groq_model', document.getElementById('groq-model').value);
+  save('max_tokens', document.getElementById('max-tokens').value);
+  showToast('⚙️ Model settings saved!');
+}
+
+// ── Link ───────────────────────────────────────────────────────────────────
+function updateLink() {
+  const url = document.getElementById('pages-url').value.trim();
+  const el = document.getElementById('tutor-link');
+  el.textContent = url || 'Set your GitHub Pages URL below';
+  save('pages_url', url);
+}
+
+function copyLink() {
+  const url = document.getElementById('pages-url').value.trim();
+  if (!url) { showToast('⚠️ Set the URL first'); return; }
+  navigator.clipboard.writeText(url).then(() => showToast('🔗 Link copied!'));
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetAll() {
+  if (confirm('Reset ALL admin settings? This cannot be undone.')) {
+    ['groq_key','teacher_name','uni_name','persona_extra','custom_instructions','groq_model','max_tokens','pages_url','key_status'].forEach(k => localStorage.removeItem('mth_admin_' + k));
+    loadAllSettings();
+    showToast('🔄 Reset to defaults');
+  }
+}
+</script>
+</body>
+</html>
