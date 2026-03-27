@@ -6,6 +6,45 @@
 <title>MTH 102 Tutor — BABSPHARM CLOUD</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+<!-- Firebase compat (works on static sites) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// Firebase init — wrapped safely so errors don't break the page
+(function() {
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtwgwMJ9f5Oo7iTBHUkgPNJ4U-BAxlrW8",
+      authDomain: "babspharmcloud.firebaseapp.com",
+      projectId: "babspharmcloud",
+      storageBucket: "babspharmcloud.firebasestorage.app",
+      messagingSenderId: "385674572482",
+      appId: "1:385674572482:web:a427125e649fef011b815b",
+      measurementId: "G-ZM6EX0MWZL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let deviceId = localStorage.getItem('babs_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Math.random().toString(36).substr(2,12);
+      localStorage.setItem('babs_device_id', deviceId);
+    }
+    window.firebaseSyncSave = async function(data) {
+      try { await db.collection('mth102_students').doc(deviceId).set(data, {merge:true}); } catch(e) {}
+    };
+    window.firebaseSyncLoad = async function() {
+      try {
+        const snap = await db.collection('mth102_students').doc(deviceId).get();
+        return snap.exists ? snap.data() : null;
+      } catch(e) { return null; }
+    };
+  } catch(e) {
+    // Firebase failed — app still works with localStorage only
+    window.firebaseSyncSave = async function() {};
+    window.firebaseSyncLoad = async function() { return null; };
+  }
+})();
+</script>
 <style>
 :root {
   --bg:#f7f4ef;--card:#fff;--accent:#1a1a2e;--gold:#c9a84c;--gold-light:#f5e9b8;
@@ -31,6 +70,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .level-start:hover{background:var(--gold);color:var(--accent);}
 /* Level badge in header */
 #level-badge{font-size:0.6rem;padding:2px 8px;border-radius:20px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;border:1px solid rgba(201,168,76,0.4);color:rgba(201,168,76,0.8);}
+#streak-badge{font-size:0.68rem;padding:2px 9px;border-radius:20px;font-family:'Syne',sans-serif;font-weight:800;background:rgba(255,160,0,0.15);border:1px solid rgba(255,160,0,0.4);color:#ffb300;cursor:pointer;}
+#streak-badge.on-fire{animation:streakPulse 2s infinite;}
+@keyframes streakPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,160,0,0.3)}50%{box-shadow:0 0 8px 3px rgba(255,160,0,0.2)}}
+/* Streak celebration */
+#streak-toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) scale(0);background:linear-gradient(135deg,#ff8c00,#ffd700);color:#1a1a2e;font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;padding:12px 24px;border-radius:30px;box-shadow:0 8px 30px rgba(255,140,0,0.4);z-index:999;white-space:nowrap;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+#streak-toast.show{transform:translateX(-50%) scale(1);}
+/* Sync indicator */
+#sync-dot{width:7px;height:7px;border-radius:50%;background:#6fcf97;position:absolute;top:4px;right:4px;}
 
 header{background:var(--accent);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--gold);letter-spacing:1px;}
@@ -103,6 +150,53 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
 .dot-flashing span:nth-child(2){animation-delay:0.2s}.dot-flashing span:nth-child(3){animation-delay:0.4s}
 @keyframes dotb{0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-6px);opacity:1}}
 
+/* Formula Panel */
+#formula-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;}
+#formula-overlay.open{display:flex;}
+#formula-panel{background:var(--card);width:100%;border-radius:20px 20px 0 0;max-height:82vh;display:flex;flex-direction:column;animation:slideUp 0.3s ease;}
+#formula-header{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 0;}
+#formula-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent);}
+#formula-close{background:var(--bg);border:none;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#formula-tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 16px 0;scrollbar-width:none;flex-shrink:0;}
+#formula-tabs::-webkit-scrollbar{display:none;}
+.ftab{white-space:nowrap;font-size:0.68rem;font-family:'Syne',sans-serif;font-weight:700;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.ftab.active{background:var(--accent);color:var(--gold);border-color:var(--accent);}
+#formula-content{overflow-y:auto;padding:14px 16px 30px;flex:1;scrollbar-width:thin;}
+.f-section{margin-bottom:16px;}
+.f-section-title{font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--gold);}
+.f-item{background:var(--bg);border-radius:10px;padding:10px 13px;margin-bottom:7px;border-left:3px solid var(--gold);}
+.f-name{font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;color:var(--accent);margin-bottom:4px;}
+.f-formula{font-size:0.82rem;color:var(--text);line-height:1.6;}
+.f-note{font-size:0.72rem;color:var(--muted);margin-top:3px;font-style:italic;}
+.f-warn{background:rgba(192,57,43,0.06);border-left-color:var(--red);}
+.f-warn .f-name{color:var(--red);}
+
+/* Mastery Dashboard */
+#mastery-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;}
+#mastery-overlay.open{display:flex;}
+#mastery-panel{background:var(--card);width:100%;border-radius:20px 20px 0 0;max-height:85vh;display:flex;flex-direction:column;animation:slideUp 0.3s ease;}
+#mastery-header{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px;flex-shrink:0;}
+#mastery-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--accent);}
+#mastery-close{background:var(--bg);border:none;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;}
+#mastery-body{overflow-y:auto;padding:4px 16px 30px;flex:1;}
+.mastery-summary{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.m-stat{flex:1;min-width:70px;background:var(--bg);border-radius:12px;padding:12px 8px;text-align:center;border:1px solid var(--border);}
+.m-stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--accent);}
+.m-stat-label{font-size:0.68rem;color:var(--muted);margin-top:2px;}
+.mastery-topic{background:var(--bg);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);}
+.mt-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.mt-name{font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;color:var(--accent);}
+.mt-score{font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:20px;}
+.mt-score.good{background:rgba(45,106,79,0.12);color:var(--green);}
+.mt-score.mid{background:rgba(201,168,76,0.15);color:#a07d20;}
+.mt-score.low{background:rgba(192,57,43,0.1);color:var(--red);}
+.mt-bar{height:6px;background:#e2ddd5;border-radius:6px;overflow:hidden;}
+.mt-fill{height:100%;border-radius:6px;transition:width 0.5s;}
+.mt-detail{font-size:0.72rem;color:var(--muted);margin-top:5px;}
+.mastery-memory{background:rgba(26,74,122,0.05);border:1px solid rgba(26,74,122,0.15);border-radius:12px;padding:12px 14px;margin-bottom:16px;}
+.mastery-memory-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;color:var(--blue);margin-bottom:6px;}
+.memory-tag{display:inline-block;background:rgba(26,74,122,0.08);border:1px solid rgba(26,74,122,0.2);border-radius:20px;padding:3px 10px;font-size:0.7rem;color:var(--blue);margin:2px;}
+
 /* Revision History Panel */
 #history-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;}
 #history-overlay.open{display:flex;}
@@ -142,7 +236,7 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
 <div id="level-screen">
   <div id="level-card">
     <div class="level-logo">BABSPHARM<span> CLOUD</span></div>
-    <div class="level-title">MTH 101 & 102 Tutor — Select your level</div>
+    <div class="level-title">MTH 102 Calculus Tutor — Select your level</div>
     <div class="level-option" data-level="beginner" onclick="selectLevel(this)">
       <div class="level-icon">🌱</div>
       <div><div class="level-name">Beginner</div><div class="level-desc">I am new to this topic or find maths difficult. Explain everything from scratch in the simplest way possible.</div></div>
@@ -163,6 +257,7 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
   <div style="display:flex;align-items:center;gap:8px;">
     <div class="logo">BABSPHARM<span> CLOUD</span></div>
     <div id="level-badge" onclick="document.getElementById('level-screen').style.display='flex'">🌱 Beginner</div>
+    <div id="streak-badge">🔥 0</div>
   </div>
   <div class="badges"><div class="badge b102">MTH 102 — Calculus</div></div>
 </header>
@@ -182,6 +277,28 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
   <div class="mode-btn" data-mode="exam">🎯 Exam Prep</div>
   <div class="mode-btn" data-mode="summary">⚡ Summary</div>
   <div class="mode-btn" id="history-btn">🕐 History</div>
+  <div class="mode-btn" id="formula-btn">📐 Formulas</div>
+  <div class="mode-btn" id="mastery-btn">📊 My Progress</div>
+</div>
+
+<!-- Formula Reference Panel -->
+<div id="formula-overlay">
+  <div id="formula-panel">
+    <div id="formula-header">
+      <div id="formula-title">📐 MTH 102 Formula Sheet</div>
+      <button id="formula-close">✕</button>
+    </div>
+    <div id="formula-tabs">
+      <div class="ftab active" data-ftopic="functions">Functions</div>
+      <div class="ftab" data-ftopic="limits">Limits</div>
+      <div class="ftab" data-ftopic="diff">Differentiation</div>
+      <div class="ftab" data-ftopic="curve">Curve Sketching</div>
+      <div class="ftab" data-ftopic="integ">Integration</div>
+      <div class="ftab" data-ftopic="definite">Definite Integrals</div>
+      <div class="ftab" data-ftopic="areas">Areas & Volumes</div>
+    </div>
+    <div id="formula-content"></div>
+  </div>
 </div>
 
 <!-- Revision History Panel -->
@@ -194,6 +311,19 @@ header{background:var(--accent);padding:12px 16px;display:flex;align-items:cente
     <div id="history-list">
       <div id="history-empty">No topics studied yet.<br>Start a lesson and your history will appear here!</div>
     </div>
+  </div>
+</div>
+
+<div id="streak-toast">🔥 Day streak!</div>
+
+<!-- Mastery Dashboard Panel -->
+<div id="mastery-overlay">
+  <div id="mastery-panel">
+    <div id="mastery-header">
+      <div id="mastery-title">📊 My Progress <span id="sync-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#c9a84c;margin-left:6px;vertical-align:middle;" title="Syncing to cloud..."></span></div>
+      <button id="mastery-close">✕</button>
+    </div>
+    <div id="mastery-body"></div>
   </div>
 </div>
 
@@ -222,8 +352,220 @@ let currentSubtopicIndex = 0;
 let activeCourse = '101';
 let activeMode = 'teach';
 let teachingInProgress = false;
-let studentLevel = 'beginner'; // beginner | intermediate | advanced
-let waitingForCorrectAnswer = false; // prevent moving on until student answers correctly
+let studentLevel = 'beginner';
+let waitingForCorrectAnswer = false;
+
+// ── GAP 2 & 3: Memory + Mastery + Firebase Sync + Streak ─────────────────
+const STORAGE_KEY = 'babspharm_mth102';
+
+function loadStudentData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { mastery:{}, memory:[], totalCorrect:0, totalWrong:0, sessions:0, streak:0, lastStudyDate:'', longestStreak:0 };
+  } catch { return { mastery:{}, memory:[], totalCorrect:0, totalWrong:0, sessions:0, streak:0, lastStudyDate:'', longestStreak:0 }; }
+}
+
+function saveStudentData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  // Sync to Firebase in background (non-blocking)
+  if (window.firebaseSyncSave) window.firebaseSyncSave(data).catch(()=>{});
+}
+
+// Load from Firebase on startup (merge with localStorage)
+async function initStudentData() {
+  let local = loadStudentData();
+  if (window.firebaseSyncLoad) {
+    try {
+      const cloud = await window.firebaseSyncLoad();
+      if (cloud) {
+        // Merge: take the higher values (most progress wins)
+        local.totalCorrect = Math.max(local.totalCorrect||0, cloud.totalCorrect||0);
+        local.totalWrong = Math.max(local.totalWrong||0, cloud.totalWrong||0);
+        local.sessions = Math.max(local.sessions||0, cloud.sessions||0);
+        local.streak = Math.max(local.streak||0, cloud.streak||0);
+        local.longestStreak = Math.max(local.longestStreak||0, cloud.longestStreak||0);
+        if (cloud.lastStudyDate) local.lastStudyDate = cloud.lastStudyDate;
+        if (cloud.memory && cloud.memory.length > (local.memory||[]).length) local.memory = cloud.memory;
+        // Merge mastery per topic
+        Object.entries(cloud.mastery||{}).forEach(([topic, cd]) => {
+          if (!local.mastery[topic]) local.mastery[topic] = cd;
+          else {
+            local.mastery[topic].correct = Math.max(local.mastery[topic].correct||0, cd.correct||0);
+            local.mastery[topic].wrong = Math.max(local.mastery[topic].wrong||0, cd.wrong||0);
+          }
+        });
+        saveStudentData(local);
+        // Show sync indicator
+        document.getElementById('sync-dot') && (document.getElementById('sync-dot').style.background='#6fcf97');
+      }
+    } catch(e) {}
+  }
+  return local;
+}
+
+let studentData = loadStudentData();
+
+// ── Study Streak System ───────────────────────────────────────────────────
+function updateStreak() {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const last = studentData.lastStudyDate || '';
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  if (last === today) {
+    // Already studied today — streak unchanged
+  } else if (last === yesterday) {
+    // Studied yesterday — extend streak
+    studentData.streak = (studentData.streak || 0) + 1;
+    studentData.lastStudyDate = today;
+    if (studentData.streak > (studentData.longestStreak || 0)) studentData.longestStreak = studentData.streak;
+    showStreakToast(studentData.streak);
+  } else if (!last) {
+    // First ever session
+    studentData.streak = 1;
+    studentData.lastStudyDate = today;
+    studentData.longestStreak = 1;
+  } else {
+    // Streak broken
+    studentData.streak = 1;
+    studentData.lastStudyDate = today;
+  }
+  studentData.sessions = (studentData.sessions || 0) + 1;
+  saveStudentData(studentData);
+  renderStreakBadge();
+}
+
+function renderStreakBadge() {
+  const badge = document.getElementById('streak-badge');
+  if (!badge) return;
+  const s = studentData.streak || 0;
+  badge.textContent = `🔥 ${s} day${s!==1?'s':''}`;
+  if (s >= 3) badge.classList.add('on-fire');
+  else badge.classList.remove('on-fire');
+}
+
+function showStreakToast(streak) {
+  const toast = document.getElementById('streak-toast');
+  if (!toast) return;
+  const msgs = {1:'🔥 Day 1 — Great start!', 2:'🔥 2 Days in a row!', 3:'🔥 3-Day Streak! You\'re building a habit!', 5:'🔥 5-Day Streak! Incredible!', 7:'🏆 7-Day Streak! One full week!', 10:'🏆 10-Day Streak! You are unstoppable!', 14:'🏆 2-Week Streak! Legend!'};
+  const key = Object.keys(msgs).reverse().find(k => streak >= parseInt(k));
+  toast.textContent = key ? msgs[key] : `🔥 ${streak}-Day Streak! Keep going!`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+// Initialise
+updateStreak();
+
+// Load from Firebase async (updates UI when done)
+initStudentData().then(merged => {
+  studentData = merged;
+  renderStreakBadge();
+});
+
+// Record a correct/wrong answer for mastery tracking
+function recordAnswer(topic, correct) {
+  if (!topic) return;
+  if (!studentData.mastery[topic]) studentData.mastery[topic] = { correct:0, wrong:0, lastSeen:'' };
+  if (correct) { studentData.mastery[topic].correct++; studentData.totalCorrect++; }
+  else { studentData.mastery[topic].wrong++; studentData.totalWrong++; }
+  studentData.mastery[topic].lastSeen = new Date().toLocaleDateString('en-NG',{day:'numeric',month:'short'});
+  saveStudentData(studentData);
+}
+
+// Add a memory note about the student
+function addMemoryNote(note) {
+  if (!studentData.memory) studentData.memory = [];
+  if (studentData.memory.length >= 15) studentData.memory.shift(); // keep last 15
+  studentData.memory.push(note);
+  saveStudentData(studentData);
+}
+
+// Get weakest topics for targeted practice (Gap 4)
+function getWeakTopics() {
+  const weak = [];
+  Object.entries(studentData.mastery).forEach(([topic, data]) => {
+    const total = data.correct + data.wrong;
+    if (total > 0) {
+      const pct = Math.round((data.correct / total) * 100);
+      if (pct < 70) weak.push({ topic, pct });
+    }
+  });
+  return weak.sort((a,b) => a.pct - b.pct); // weakest first
+}
+
+// Build memory context string for AI
+function buildMemoryContext() {
+  const weak = getWeakTopics();
+  let ctx = '';
+  if (studentData.memory && studentData.memory.length > 0) {
+    ctx += `\n\n=== STUDENT MEMORY (from previous sessions) ===\n`;
+    ctx += studentData.memory.map(m => `- ${m}`).join('\n');
+  }
+  if (weak.length > 0) {
+    ctx += `\n\n=== STUDENT WEAK AREAS ===\n`;
+    ctx += weak.map(w => `- ${w.topic}: ${w.pct}% correct — needs more work`).join('\n');
+    ctx += `\nFocus extra attention on these topics. If student asks for practice, prioritise these weak areas.`;
+  }
+  const m = studentData.mastery;
+  const strong = Object.entries(m).filter(([t,d]) => {
+    const tot = d.correct+d.wrong; return tot>0 && Math.round((d.correct/tot)*100)>=80;
+  }).map(([t]) => t);
+  if (strong.length > 0) ctx += `\n\nSTRONG TOPICS: ${strong.join(', ')} — student is confident here.`;
+  return ctx;
+}
+
+// Render mastery dashboard
+function renderMastery() {
+  const body = document.getElementById('mastery-body');
+  const total = studentData.totalCorrect + studentData.totalWrong;
+  const overallPct = total > 0 ? Math.round((studentData.totalCorrect/total)*100) : 0;
+  let html = `<div class="mastery-summary">
+    <div class="m-stat"><div class="m-stat-num">${overallPct}%</div><div class="m-stat-label">Score</div></div>
+    <div class="m-stat"><div class="m-stat-num">${studentData.totalCorrect}</div><div class="m-stat-label">Correct ✓</div></div>
+    <div class="m-stat"><div class="m-stat-num">${studentData.totalWrong}</div><div class="m-stat-label">Wrong ✗</div></div>
+    <div class="m-stat"><div class="m-stat-num">🔥${studentData.streak||0}</div><div class="m-stat-label">Streak</div></div>
+    <div class="m-stat"><div class="m-stat-num">⭐${studentData.longestStreak||0}</div><div class="m-stat-label">Best</div></div>
+  </div>
+  <div style="background:rgba(255,160,0,0.07);border:1px solid rgba(255,160,0,0.2);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:0.78rem;color:#a07d20;">
+    <strong>🔥 Current Streak:</strong> ${studentData.streak||0} day${(studentData.streak||0)!==1?'s':''} · <strong>🏆 Best:</strong> ${studentData.longestStreak||0} days · <strong>📅 Sessions:</strong> ${studentData.sessions||1}
+    <br><span style="font-size:0.7rem;color:var(--muted);margin-top:3px;display:block;">Come back tomorrow to extend your streak! Your data syncs automatically across devices.</span>
+  </div>`;
+  // Memory notes
+  if (studentData.memory && studentData.memory.length > 0) {
+    html += `<div class="mastery-memory"><div class="mastery-memory-title">🧠 What Mr. BABS remembers about you</div>`;
+    studentData.memory.forEach(m => { html += `<span class="memory-tag">${m}</span>`; });
+    html += `</div>`;
+  }
+  // Per-topic scores
+  html += `<div style="font-family:Syne,sans-serif;font-weight:700;font-size:0.78rem;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Topic Breakdown</div>`;
+  TOPICS.forEach(t => {
+    const d = studentData.mastery[t.topic];
+    const tot = d ? d.correct+d.wrong : 0;
+    const pct = tot > 0 ? Math.round((d.correct/tot)*100) : null;
+    const scoreClass = pct === null ? 'mid' : pct >= 80 ? 'good' : pct >= 50 ? 'mid' : 'low';
+    const scoreLabel = pct === null ? 'Not started' : `${pct}%`;
+    const barColor = pct === null ? '#e2ddd5' : pct >= 80 ? '#2d6a4f' : pct >= 50 ? '#c9a84c' : '#c0392b';
+    html += `<div class="mastery-topic">
+      <div class="mt-header"><div class="mt-name">${t.label}</div><div class="mt-score ${scoreClass}">${scoreLabel}</div></div>
+      <div class="mt-bar"><div class="mt-fill" style="width:${pct||0}%;background:${barColor}"></div></div>
+      <div class="mt-detail">${tot > 0 ? `${d.correct} correct · ${d.wrong} wrong · Last seen: ${d.lastSeen}` : 'No questions attempted yet'}</div>
+    </div>`;
+  });
+  html += `<div style="text-align:center;margin-top:16px"><button onclick="if(confirm('Reset all progress?')){localStorage.removeItem('${STORAGE_KEY}');studentData=loadStudentData();renderMastery();}" style="background:rgba(192,57,43,0.08);color:#c0392b;border:1px solid rgba(192,57,43,0.25);border-radius:10px;padding:8px 18px;font-family:Syne,sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;">Reset My Progress</button></div>`;
+  body.innerHTML = html;
+}
+
+document.getElementById('mastery-btn').addEventListener('click', () => {
+  renderMastery();
+  document.getElementById('mastery-overlay').classList.add('open');
+});
+document.getElementById('mastery-close').addEventListener('click', () => {
+  document.getElementById('mastery-overlay').classList.remove('open');
+});
+document.getElementById('mastery-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('mastery-overlay'))
+    document.getElementById('mastery-overlay').classList.remove('open');
+});
 
 // ── Level selector ────────────────────────────────────────────────────────
 function selectLevel(el) {
@@ -293,6 +635,201 @@ document.getElementById('history-close').addEventListener('click', () => {
 document.getElementById('history-overlay').addEventListener('click', (e) => {
   if (e.target === document.getElementById('history-overlay'))
     document.getElementById('history-overlay').classList.remove('open');
+});
+
+// ── Formula Panel ─────────────────────────────────────────────────────────
+const FORMULAS = {
+  functions:[
+    {title:"Core Definitions",items:[
+      {name:"Function",formula:"f: A → B assigns each x in A exactly one f(x) in B",note:"Domain=A, Codomain=B, Range={f(x): x∈A}"},
+      {name:"Composite Function",formula:"(f∘g)(x) = f(g(x))",note:"Apply g first, then f. NOT commutative."},
+      {name:"Inverse Function",formula:"y=f(x) → swap x & y → solve for y = f⁻¹(x)",note:"Exists only if f is one-to-one. f(f⁻¹(x))=x"},
+      {name:"Even Function",formula:"f(−x) = f(x)",note:"Symmetric about y-axis. E.g. x², cos x"},
+      {name:"Odd Function",formula:"f(−x) = −f(x)",note:"Symmetric about origin. E.g. x³, sin x"},
+    ]},
+    {title:"Graphical Transformations",items:[
+      {name:"Vertical Shift",formula:"y=f(x)+k (up k),  y=f(x)−k (down k)"},
+      {name:"Horizontal Shift",formula:"y=f(x−h) (right h),  y=f(x+h) (left h)"},
+      {name:"Reflections",formula:"y=−f(x) in x-axis,  y=f(−x) in y-axis"},
+      {name:"Stretch",formula:"y=af(x) vertical stretch,  y=f(bx) horizontal"},
+    ]},
+    {title:"Asymptotes of P(x)/Q(x)",items:[
+      {name:"Vertical",formula:"x=a where Q(a)=0 and P(a)≠0"},
+      {name:"Horizontal",formula:"deg P < deg Q → y=0 | deg P = deg Q → y=ratio of leading coefficients | deg P > deg Q → none"},
+    ]},
+  ],
+  limits:[
+    {title:"Limit Laws",items:[
+      {name:"Sum/Difference",formula:"lim[f±g] = L±M"},
+      {name:"Product",formula:"lim[f·g] = L·M"},
+      {name:"Quotient",formula:"lim[f/g] = L/M   (M≠0)"},
+      {name:"Power / Root",formula:"lim[f(x)]ⁿ=Lⁿ,   lim√f(x)=√L"},
+    ]},
+    {title:"Standard Limits",items:[
+      {name:"Trig",formula:"lim[x→0] sin(x)/x = 1"},
+      {name:"Trig 2",formula:"lim[x→0] (1−cos x)/x = 0"},
+      {name:"Exponential",formula:"lim[x→0] (eˣ−1)/x = 1"},
+      {name:"Euler",formula:"lim[x→∞] (1+1/x)ˣ = e"},
+    ]},
+    {title:"L'Hôpital's Rule",items:[
+      {name:"Rule",formula:"If lim f/g = 0/0 or ∞/∞,  then lim f/g = lim f′/g′",note:"Differentiate top & bottom SEPARATELY — NOT quotient rule!"},
+      {warn:true,name:"⚠️ Warning",formula:"Only apply when you have 0/0 or ∞/∞ form. NOT for other limits."},
+    ]},
+    {title:"Continuity at x=a",items:[
+      {name:"3 Conditions",formula:"1. f(a) defined\n2. lim[x→a]f(x) exists\n3. lim[x→a]f(x) = f(a)"},
+      {name:"IVT",formula:"f continuous on [a,b], f(a)<N<f(b) ⟹ ∃c∈(a,b): f(c)=N"},
+    ]},
+  ],
+  diff:[
+    {title:"Definition & Notation",items:[
+      {name:"First Principles",formula:"f′(x) = lim[h→0] (f(x+h)−f(x)) / h"},
+      {name:"Tangent Line at x=a",formula:"y − f(a) = f′(a)(x−a)"},
+      {name:"Normal Line at x=a",formula:"y − f(a) = −(1/f′(a))(x−a)"},
+    ]},
+    {title:"Differentiation Rules",items:[
+      {name:"Constant",formula:"d/dx[c] = 0"},
+      {name:"Power Rule",formula:"d/dx[xⁿ] = nxⁿ⁻¹"},
+      {name:"Sum/Difference",formula:"d/dx[f±g] = f′±g′"},
+      {name:"Product Rule",formula:"d/dx[uv] = u′v + uv′"},
+      {name:"Quotient Rule",formula:"d/dx[u/v] = (u′v − uv′)/v²",note:"'Low d-high minus high d-low over low squared'"},
+      {name:"Chain Rule",formula:"d/dx[f(g(x))] = f′(g(x))·g′(x)",note:"Outer derivative × inner derivative"},
+    ]},
+    {title:"Trig Derivatives",items:[
+      {name:"sin, cos, tan",formula:"d/dx[sin x]=cos x,  d/dx[cos x]=−sin x,  d/dx[tan x]=sec²x"},
+      {name:"cosec, sec, cot",formula:"d/dx[cosec x]=−cosec x·cot x,  d/dx[sec x]=sec x·tan x,  d/dx[cot x]=−cosec²x"},
+    ]},
+    {title:"Exponential & Log",items:[
+      {name:"eˣ, aˣ",formula:"d/dx[eˣ]=eˣ,   d/dx[aˣ]=aˣ ln a"},
+      {name:"ln x, logₐx",formula:"d/dx[ln x]=1/x,   d/dx[logₐx]=1/(x ln a)"},
+      {name:"Chain versions",formula:"d/dx[e^f(x)]=e^f(x)·f′(x),   d/dx[ln f(x)]=f′(x)/f(x)"},
+    ]},
+    {title:"Special Techniques",items:[
+      {name:"Implicit Diff.",formula:"Diff. both sides w.r.t x, treat y as function of x → d/dx[y]=dy/dx, d/dx[y²]=2y·dy/dx, then solve for dy/dx"},
+      {name:"Log. Differentiation",formula:"Take ln of both sides, diff. implicitly, solve for dy/dx",note:"Best for y=[f(x)]^g(x) or complex products"},
+    ]},
+  ],
+  curve:[
+    {title:"Increasing / Decreasing",items:[
+      {name:"Increasing",formula:"f′(x) > 0 on (a,b)"},
+      {name:"Decreasing",formula:"f′(x) < 0 on (a,b)"},
+      {name:"Stationary Points",formula:"Solve f′(x) = 0"},
+    ]},
+    {title:"Classifying Stationary Points",items:[
+      {name:"First Derivative Test",formula:"f′: + to − → LOCAL MAX\nf′: − to + → LOCAL MIN\nNo sign change → inflection"},
+      {name:"Second Derivative Test",formula:"f′(c)=0 and f″(c)<0 → LOCAL MAX\nf′(c)=0 and f″(c)>0 → LOCAL MIN\nf″(c)=0 → INCONCLUSIVE",note:"If inconclusive, use first derivative test"},
+      {warn:true,name:"⚠️ Common Mistake",formula:"f″(c)=0 does NOT mean inflection. Must check f″ changes sign."},
+    ]},
+    {title:"Concavity & Inflection",items:[
+      {name:"Concave Up",formula:"f″(x) > 0  (shape: ∪)"},
+      {name:"Concave Down",formula:"f″(x) < 0  (shape: ∩)"},
+      {name:"Point of Inflection",formula:"f″(x)=0 AND f″ changes sign at that point"},
+    ]},
+    {title:"Absolute Extrema on [a,b]",items:[
+      {name:"Closed Interval Method",formula:"1. Find critical points in (a,b)\n2. Evaluate f at critical points + endpoints a and b\n3. Largest=absolute max, smallest=absolute min"},
+    ]},
+    {title:"Curve Sketching Algorithm",items:[
+      {name:"7 Steps",formula:"1.Domain  2.Intercepts  3.Symmetry  4.Asymptotes  5.f′ (critical pts, increase/decrease)  6.f″ (inflection, concavity)  7.Sketch"},
+    ]},
+  ],
+  integ:[
+    {title:"Standard Integrals",items:[
+      {name:"Power Rule",formula:"∫xⁿ dx = xⁿ⁺¹/(n+1) + C   (n≠−1)"},
+      {name:"1/x",formula:"∫(1/x) dx = ln|x| + C"},
+      {name:"eˣ, aˣ",formula:"∫eˣ dx = eˣ+C,   ∫aˣ dx = aˣ/ln a+C"},
+      {name:"Trig (basic)",formula:"∫sin x dx=−cos x+C,   ∫cos x dx=sin x+C,   ∫sec²x dx=tan x+C"},
+      {name:"Trig (more)",formula:"∫cosec²x dx=−cot x+C,   ∫sec x tan x dx=sec x+C,   ∫cosec x cot x dx=−cosec x+C"},
+    ]},
+    {title:"Substitution Method",items:[
+      {name:"Steps",formula:"1. Let u=g(x)\n2. du=g′(x)dx\n3. Substitute → get integral in u only\n4. Integrate\n5. Back-substitute",note:"Pattern: ∫f(g(x))·g′(x)dx"},
+      {name:"Example",formula:"∫2x(x²+1)³dx: u=x²+1, du=2xdx → ∫u³du = (x²+1)⁴/4+C"},
+    ]},
+    {title:"Integration by Parts",items:[
+      {name:"Formula",formula:"∫u dv = uv − ∫v du"},
+      {name:"LIATE Rule",formula:"L=Logarithmic, I=Inverse trig, A=Algebraic, T=Trig, E=Exponential",note:"Choose u = whichever appears first in LIATE"},
+      {name:"Example",formula:"∫x eˣdx: u=x, dv=eˣdx → xeˣ−eˣ+C = eˣ(x−1)+C"},
+      {warn:true,name:"⚠️ Warning",formula:"Do NOT forget the −∫v du part. And never use quotient rule here."},
+    ]},
+  ],
+  definite:[
+    {title:"Fundamental Theorems",items:[
+      {name:"FTC Part 1",formula:"d/dx[∫ₐˣ f(t)dt] = f(x)",note:"Derivative and integral are inverse operations"},
+      {name:"FTC Part 2",formula:"∫ₐᵇ f(x)dx = F(b) − F(a)   where F′=f",note:"The constant C cancels — no need to include it"},
+    ]},
+    {title:"Properties",items:[
+      {name:"Same Limits",formula:"∫ₐᵃ f(x)dx = 0"},
+      {name:"Reverse Limits",formula:"∫ₐᵇ f dx = −∫ᵦᵃ f dx"},
+      {name:"Linearity",formula:"∫ₐᵇ[af±bg]dx = a∫ₐᵇf dx ± b∫ₐᵇg dx"},
+      {name:"Split Interval",formula:"∫ₐᵇ f dx = ∫ₐᶜ f dx + ∫ᶜᵇ f dx"},
+      {name:"Even on [−a,a]",formula:"∫₋ₐᵃ f dx = 2∫₀ᵃ f dx"},
+      {name:"Odd on [−a,a]",formula:"∫₋ₐᵃ f dx = 0"},
+    ]},
+    {title:"Substitution in Definite Integrals",items:[
+      {name:"Change the Limits",formula:"u=g(x): new lower=g(a), new upper=g(b). Do NOT back-substitute."},
+      {warn:true,name:"⚠️ Common Mistake",formula:"Forgetting to change limits when substituting — this is the #1 error in exams!"},
+    ]},
+    {title:"Mean Value",items:[
+      {name:"Average value of f on [a,b]",formula:"f̄ = (1/(b−a)) ∫ₐᵇ f(x)dx"},
+    ]},
+  ],
+  areas:[
+    {title:"Area Under a Curve",items:[
+      {name:"Area (curve above x-axis)",formula:"A = ∫ₐᵇ f(x)dx"},
+      {name:"Total Area (curve crosses x-axis)",formula:"Split at x-intercepts. A = Σ|∫ f(x)dx| on each sub-interval"},
+      {warn:true,name:"⚠️ Warning",formula:"Area is always POSITIVE. Definite integral gives signed area. Take |value| for each region below x-axis."},
+    ]},
+    {title:"Area Between Two Curves",items:[
+      {name:"Formula",formula:"A = ∫ₐᵇ [f(x)−g(x)]dx   where f(x)≥g(x) on [a,b]",note:"Top curve minus bottom curve"},
+      {name:"If curves cross",formula:"Split at intersection points. On each sub-interval determine which is on top."},
+      {name:"In terms of y",formula:"A = ∫_c^d [f(y)−g(y)]dy   (right curve minus left curve)"},
+    ]},
+    {title:"Volumes of Revolution",items:[
+      {name:"Disc Method (about x-axis)",formula:"V = π ∫ₐᵇ [f(x)]² dx",note:"Each cross-section is a disc with radius f(x)"},
+      {name:"Washer Method (about x-axis)",formula:"V = π ∫ₐᵇ {[f(x)]²−[g(x)]²} dx",note:"f(x)=outer radius, g(x)=inner radius"},
+      {name:"Shell Method (about y-axis)",formula:"V = 2π ∫ₐᵇ x·f(x) dx   (a≥0)"},
+      {name:"Disc Method (about y-axis)",formula:"V = π ∫_c^d [f(y)]² dy   (express x as function of y)"},
+    ]},
+    {title:"Method Selection",items:[
+      {name:"Which method to use?",formula:"About x-axis + using x → Disc/Washer\nAbout y-axis + using x → Shell (usually easier)\nAbout y-axis + using y → Disc"},
+    ]},
+  ],
+};
+
+function renderFormulas(topic) {
+  const content = document.getElementById('formula-content');
+  content.innerHTML = '';
+  const sections = FORMULAS[topic] || [];
+  sections.forEach(sec => {
+    const div = document.createElement('div');
+    div.className = 'f-section';
+    div.innerHTML = `<div class="f-section-title">${sec.title}</div>`;
+    sec.items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'f-item' + (item.warn ? ' f-warn' : '');
+      el.innerHTML = `<div class="f-name">${item.name}</div><div class="f-formula">${item.formula.replace(/\n/g,'<br>')}</div>${item.note?`<div class="f-note">${item.note}</div>`:''}`;
+      div.appendChild(el);
+    });
+    content.appendChild(div);
+  });
+  if (window.MathJax) MathJax.typesetPromise([content]).catch(()=>{});
+}
+
+document.getElementById('formula-btn').addEventListener('click', () => {
+  document.getElementById('formula-overlay').classList.add('open');
+  renderFormulas('functions');
+});
+document.getElementById('formula-close').addEventListener('click', () => {
+  document.getElementById('formula-overlay').classList.remove('open');
+});
+document.getElementById('formula-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('formula-overlay'))
+    document.getElementById('formula-overlay').classList.remove('open');
+});
+document.querySelectorAll('.ftab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderFormulas(tab.dataset.ftopic);
+  });
 });
 
 // ── Progress bar ──────────────────────────────────────────────────────────
@@ -675,7 +1212,60 @@ SETTING UP PROBLEMS:
 2. Identify axis of rotation
 3. Draw a representative slice (vertical → dx, horizontal → dy)
 4. Write radius/height in terms of the variable
-5. Set up and evaluate the integral`;
+5. Set up and evaluate the integral
+
+════════════════════════════════════════
+PROGRESSIVE WORKED EXAMPLE LIBRARY
+════════════════════════════════════════
+Use these carefully crafted examples. Always start with SIMPLE, then build to MEDIUM, then HARD/EXAM-LEVEL.
+
+FUNCTIONS EXAMPLES:
+Simple: f(x)=2x+3, g(x)=x². Find (f∘g)(x)=(2x²+3), (g∘f)(x)=(2x+3)²=4x²+12x+9. Note f∘g≠g∘f.
+Simple: f(x)=3x-1. Find f⁻¹: y=3x-1 → x=(y+1)/3 → f⁻¹(x)=(x+1)/3.
+Medium: f(x)=√(x-2). Domain: x-2≥0 → x≥2, so domain=[2,∞). Range=[0,∞).
+Medium: Is f(x)=x³ even, odd or neither? f(-x)=(-x)³=-x³=-f(x). ODD function.
+Hard: f(x)=(2x+1)/(x-3). Find domain (x≠3), inverse: y=(2x+1)/(x-3) → y(x-3)=2x+1 → xy-3y=2x+1 → xy-2x=3y+1 → x(y-2)=3y+1 → f⁻¹(x)=(3x+1)/(x-2).
+
+LIMITS EXAMPLES:
+Simple: lim[x→3](x²-9)/(x-3) = lim[x→3](x+3)(x-3)/(x-3) = lim[x→3](x+3) = 6.
+Simple: lim[x→∞](3x²+2x)/(5x²-1) = 3/5 (divide by x², highest power).
+Medium: lim[x→0](√(x+4)-2)/x — rationalise: multiply by (√(x+4)+2): = lim (x+4-4)/(x(√(x+4)+2)) = lim x/(x(√(x+4)+2)) = 1/(√4+2) = 1/4.
+Medium: lim[x→2⁺]1/(x-2)=+∞; lim[x→2⁻]1/(x-2)=-∞. Limit DNE.
+Hard: lim[x→0](eˣ-1-x)/x² — L'Hôpital twice: →lim(eˣ-1)/2x →lim eˣ/2 = 1/2.
+
+DIFFERENTIATION EXAMPLES:
+Simple (first principles): f(x)=x². f'(x)=lim[h→0]((x+h)²-x²)/h=lim(2xh+h²)/h=lim(2x+h)=2x. ✓
+Simple: y=3x⁴-5x²+7. dy/dx=12x³-10x.
+Medium (product): y=x²·sin x. dy/dx=2x·sin x+x²·cos x.
+Medium (quotient): y=(x²+1)/(2x-3). dy/dx=(2x(2x-3)-2(x²+1))/(2x-3)²=(2x²-6x-2)/(2x-3)².
+Medium (chain): y=(3x²+1)⁵. dy/dx=5(3x²+1)⁴·6x=30x(3x²+1)⁴.
+Hard (implicit): x²+xy+y²=7. Differentiate: 2x+y+x(dy/dx)+2y(dy/dx)=0. dy/dx(x+2y)=-(2x+y). dy/dx=-(2x+y)/(x+2y).
+Hard (chain+trig): y=sin²(3x). dy/dx=2sin(3x)·cos(3x)·3=3sin(6x).
+
+CURVE SKETCHING EXAMPLES:
+Simple: f(x)=x³-3x. f'=3x²-3=3(x-1)(x+1)=0 → x=±1. f''=6x. At x=-1: f''=-6<0 LOCAL MAX, f(-1)=2. At x=1: f''=6>0 LOCAL MIN, f(1)=-2.
+Medium: Find intervals where f(x)=x⁴-8x² is increasing/decreasing. f'=4x³-16x=4x(x²-4)=4x(x-2)(x+2). Sign chart: f'>0 on (-2,0)∪(2,∞) [increasing], f'<0 on (-∞,-2)∪(0,2) [decreasing].
+Hard optimisation: A rectangle has perimeter 40cm. Find maximum area. Let width=x, length=20-x. A=x(20-x)=20x-x². dA/dx=20-2x=0 → x=10. d²A/dx²=-2<0 → maximum. Max area=10×10=100cm².
+
+INTEGRATION EXAMPLES:
+Simple: ∫(3x²-4x+1)dx = x³-2x²+x+C.
+Simple: ∫₀²(x²+1)dx = [x³/3+x]₀² = (8/3+2)-(0) = 14/3.
+Medium (substitution): ∫2x(x²+1)³dx. Let u=x²+1, du=2xdx. →∫u³du=u⁴/4+C=(x²+1)⁴/4+C.
+Medium (substitution): ∫₀¹ 2x(x²+1)³dx. u=x²+1; when x=0,u=1; when x=1,u=2. →∫₁²u³du=[u⁴/4]₁²=16/4-1/4=15/4.
+Hard (by parts): ∫x²eˣdx. First: u=x², dv=eˣdx → du=2xdx, v=eˣ → x²eˣ-2∫xeˣdx. Second: u=x, dv=eˣdx → xeˣ-∫eˣdx=xeˣ-eˣ. Final: x²eˣ-2(xeˣ-eˣ)+C=eˣ(x²-2x+2)+C.
+Hard (by parts): ∫ln x dx. u=ln x, dv=dx → du=1/x dx, v=x → x ln x-∫x·(1/x)dx=x ln x-x+C.
+
+AREAS AND VOLUMES EXAMPLES:
+Simple area: Area under y=x² from 0 to 3. A=∫₀³x²dx=[x³/3]₀³=9.
+Medium area between curves: Find area between y=x² and y=x. Intersect: x²=x → x=0,1. On [0,1]: x≥x². A=∫₀¹(x-x²)dx=[x²/2-x³/3]₀¹=1/2-1/3=1/6.
+Medium area below axis: Area enclosed by y=x²-4 and x-axis. Roots: x=±2. Since curve is below axis on [-2,2]: A=∫₋₂²|x²-4|dx=∫₋₂²(4-x²)dx=[4x-x³/3]₋₂²=(8-8/3)-(-8+8/3)=16-16/3=32/3.
+Hard disc method: Volume when y=√x, x=0 to x=4 is rotated about x-axis. V=π∫₀⁴(√x)²dx=π∫₀⁴x dx=π[x²/2]₀⁴=8π.
+Hard washer method: Volume of region between y=x and y=x² rotated about x-axis, x=0 to 1. V=π∫₀¹(x²-x⁴)dx=π[x³/3-x⁵/5]₀¹=π(1/3-1/5)=2π/15.
+
+EXAMPLE PROGRESSION RULE:
+- BEGINNER student → always start with "Simple" example, then offer Medium only after they confirm they understood
+- INTERMEDIATE student → start with Medium, mention the Simple pattern first briefly
+- ADVANCED student → go straight to Hard/exam-level, show full rigorous working`;
 
 // ── Chat Engine ────────────────────────────────────────────────────────────
 const chatEl = document.getElementById('chat');
@@ -752,7 +1342,7 @@ function buildContext() {
   let modeInstructions = '';
 
   if (activeMode === 'teach') {
-    const topicData = activeTopic ? [...TOPICS['101'],...TOPICS['102']].find(t => t.topic === activeTopic) : null;
+    const topicData = activeTopic ? TOPICS.find(t => t.topic === activeTopic) : null;
     const subtopicList = topicData ? topicData.subtopics.map((s,i) => `  ${i+1}. ${s}`).join('\n') : '';
     const currentSub = topicData && currentSubtopicIndex < topicData.subtopics.length ? topicData.subtopics[currentSubtopicIndex] : null;
 
@@ -780,20 +1370,25 @@ No specific topic is selected. Teach whatever the student asks about, following 
 `}`;
   } else if (activeMode === 'solve') {
     modeInstructions = `
-=== PROBLEM SOLVING MODE ===
-The student has a problem to solve. 
-- First say what TYPE of problem it is and what approach is needed
-- Then solve it in clearly labelled STEPS using [STEP]...[/STEP] tags
-- For each step, explain WHY you're doing it, not just what
-- Highlight the final answer clearly
-- End by asking if they understood and offer to solve a similar one`;
+=== PROBLEM SOLVING MODE (Gap 1 — Answer Verification) ===
+The student has a problem to solve.
+- If the student gives their OWN answer/working: ALWAYS verify it yourself first. Work out the correct answer independently, then compare step-by-step with what they wrote. Say "Let me check your working..." then identify exactly where they went right or wrong.
+- If the student just asks you to solve it: solve it in clearly labelled [STEP]...[/STEP] tags, explain WHY each step is done.
+- Never just say "that looks right" without actually checking the mathematics yourself.
+- End by asking if they understood and offer a similar problem.`;
   } else if (activeMode === 'practice') {
+    const weak = getWeakTopics();
+    const weakStr = weak.length > 0 ? `PRIORITY WEAK AREAS: ${weak.slice(0,3).map(w=>`${w.topic} (${w.pct}% correct)`).join(', ')}. Give questions on these topics FIRST.` : 'No weak areas detected yet — give balanced questions across all topics.';
     modeInstructions = `
-=== PRACTICE MODE ===
-- Give one practice question at a time
-- Label the difficulty and topic
-- After the student attempts it: check their answer, celebrate correct work, correct mistakes step by step
-- If they say they don't know: give a hint first, then full solution if needed`;
+=== PRACTICE MODE (Gap 4 — Targeted) ===
+${weakStr}
+RULES:
+- Give ONE question at a time. State the topic and difficulty (Easy/Medium/Hard).
+- CRITICAL (Gap 1 — Answer Verification): When student gives an answer, YOU must first work out the correct answer yourself step by step, then compare it to what the student said. Do not just take their word for it. Explicitly state "Let me verify this..." then show the correct working, then tell the student if they are right or wrong and why.
+- If student is wrong: show exactly which step was wrong, correct it, then ask them to try again.
+- If student is right: celebrate, show the full working anyway so they see the method.
+- After 3 questions on same topic: move to next weak area.
+- Progressively increase difficulty: Easy → Medium → Hard as student gets them right.`;
   } else if (activeMode === 'exam') {
     modeInstructions = `
 === EXAM PREP MODE ===
@@ -810,7 +1405,7 @@ The student has a problem to solve.
 - Key definitions, all important formulas in LaTeX, 3-5 key points, compact worked examples, common mistakes`;
   }
 
-  return SYSTEM_BASE + modeInstructions + `\n\n=== STUDENT LEVEL ===\nThis student has selected: ${studentLevel.toUpperCase()}. Adapt your ENTIRE teaching style, depth, language, and examples accordingly.\n\nCURRENT TOPIC FOCUS: ${activeTopic || 'Any MTH 102 topic the student asks about'}`;
+  return SYSTEM_BASE + modeInstructions + `\n\n=== STUDENT LEVEL ===\nThis student has selected: ${studentLevel.toUpperCase()}. Adapt your ENTIRE teaching style, depth, language, and examples accordingly.\n\nCURRENT TOPIC FOCUS: ${activeTopic || 'Any MTH 102 topic the student asks about'}` + buildMemoryContext();
 }
 
 async function send(rawText) {
@@ -826,10 +1421,32 @@ async function send(rawText) {
 
   if (!apiText.trim() || sendBtn.disabled) return;
 
+  // Track last question for verification context
+  const studentText = apiText;
+
   if (displayText) addMsg('user', displayText);
   messages.push({role:'user', content: apiText});
   if (displayText) { inputEl.value = ''; inputEl.style.height = 'auto'; }
   sendBtn.disabled = true;
+
+  // GAP 1: Run maths verification BEFORE main response if student gave a maths answer
+  const shouldVerify = (activeMode === 'practice' || activeMode === 'solve') && looksLikeMathsAnswer(studentText) && lastQuestion;
+  if (shouldVerify) {
+    const verifyResult = await verifyMathsAnswer(studentText, lastQuestion);
+    if (verifyResult) {
+      const verdictMatch = verifyResult.match(/VERDICT:\s*(CORRECT|WRONG)/);
+      const answerMatch = verifyResult.match(/CORRECT_ANSWER:\s*(.+)/);
+      const explanationMatch = verifyResult.match(/EXPLANATION:\s*(.+)/);
+      if (verdictMatch) {
+        showVerificationCard(
+          verdictMatch[1],
+          answerMatch?.[1] || '',
+          explanationMatch?.[1] || ''
+        );
+      }
+    }
+  }
+
   const typing = addTyping();
 
   try {
@@ -838,7 +1455,7 @@ async function send(rawText) {
       headers:{'Content-Type':'application/json', 'Authorization':'Bearer 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'},
       body: JSON.stringify({
         model:'llama-3.3-70b-versatile',
-        max_tokens:1000,
+        max_tokens:1500,
         messages:[{role:'system', content: buildContext()}, ...messages]
       })
     });
@@ -847,6 +1464,32 @@ async function send(rawText) {
     typing.remove();
     addMsg('ai', reply);
     messages.push({role:'assistant', content: reply});
+
+    // Store last question Mr. BABS asked (for verification engine)
+    const checkMatch = reply.match(/\[CHECK\]([\s\S]*?)\[\/CHECK\]/);
+    if (checkMatch) lastQuestion = checkMatch[1].trim().substring(0, 300);
+    else if (reply.includes('?')) {
+      const sentences = reply.split(/[.!]/);
+      const questionSentence = sentences.find(s => s.includes('?'));
+      if (questionSentence) lastQuestion = questionSentence.trim().substring(0, 300);
+    }
+
+    // Gap 2 — Auto-detect memory notes from AI response
+    if (reply.includes('struggling with') || reply.includes('keeps getting wrong') || reply.includes('weak on')) {
+      const topic = activeTopic;
+      if (topic) addMemoryNote(`Had difficulty with ${topic} on ${new Date().toLocaleDateString('en-NG',{day:'numeric',month:'short'})}`);
+    }
+
+    // Gap 3 — Record mastery based on AI feedback in response
+    if (activeTopic) {
+      const replyLower = reply.toLowerCase();
+      const correctSignals = ['correct!','that is right','excellent!','perfect!','well done','yes!','that\'s right','you are correct','✅'];
+      const wrongSignals = ['not quite','that is wrong','incorrect','let me correct','actually','mistake','wrong answer','try again'];
+      const isCorrect = correctSignals.some(s => replyLower.includes(s));
+      const isWrong = wrongSignals.some(s => replyLower.includes(s));
+      if (isCorrect) recordAnswer(activeTopic, true);
+      else if (isWrong) recordAnswer(activeTopic, false);
+    }
 
     // Advance subtopic index if teaching
     if (activeMode === 'teach' && activeTopic && teachingInProgress) {
@@ -884,26 +1527,176 @@ inputEl.addEventListener('input', () => {
   inputEl.style.height = Math.min(inputEl.scrollHeight, 90)+'px';
 });
 
+// ── GAP 1: Mathematical Answer Verification (separate Groq call) ──────────
+// Detects if student's message looks like a maths answer
+function looksLikeMathsAnswer(text) {
+  const mathPatterns = [
+    /dy\/dx\s*=/, /f'\(/, /=\s*[-\d]/, /∫/, /lim/, /d\/dx/,
+    /\d+x\^?\d*/, /x\²/, /x\³/, /e\^/, /ln\(/, /sin|cos|tan/,
+    /I got/, /answer is/, /my answer/, /the result/, /equals/i,
+    /=\s*[a-zA-Z0-9\(\)\+\-\*\/\^]+$/
+  ];
+  return mathPatterns.some(p => p.test(text)) && text.length < 200;
+}
+
+// Store the last question Mr. BABS asked for verification context
+let lastQuestion = '';
+
+async function verifyMathsAnswer(studentAnswer, question) {
+  try {
+    const verifyPrompt = `You are a mathematics verification engine for MTH 102 (Calculus). 
+A student was asked: "${question}"
+The student answered: "${studentAnswer}"
+
+Your job: Work out the CORRECT answer yourself from scratch. Then compare with the student's answer.
+
+Respond in this EXACT format:
+VERDICT: CORRECT or WRONG
+CORRECT_ANSWER: [the right answer]
+STUDENT_ANSWER: [what student said]
+EXPLANATION: [in 1-2 sentences: why it's right/wrong, where the error is if wrong]
+
+Be strict and mathematically precise. Only say CORRECT if the answer is mathematically equivalent.`;
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:300,
+        messages:[{role:'user', content: verifyPrompt}]
+      })
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch { return null; }
+}
+
+// Show verification result as a small card before Mr. BABS responds
+function showVerificationCard(verdict, correctAnswer, explanation) {
+  const isCorrect = verdict === 'CORRECT';
+  const card = document.createElement('div');
+  card.style.cssText = `margin:0 14px 8px;padding:10px 14px;border-radius:12px;font-size:0.78rem;line-height:1.5;border-left:4px solid ${isCorrect?'#2d6a4f':'#c0392b'};background:${isCorrect?'rgba(45,106,79,0.07)':'rgba(192,57,43,0.06)'};animation:fadeUp 0.3s ease;`;
+  card.innerHTML = `<div style="font-family:Syne,sans-serif;font-weight:700;font-size:0.72rem;color:${isCorrect?'#2d6a4f':'#c0392b'};margin-bottom:4px;">🔍 VERIFICATION ENGINE: ${isCorrect?'✅ CORRECT':'❌ WRONG'}</div><div style="color:var(--text)">${explanation}</div>${!isCorrect?`<div style="margin-top:4px;color:#2d6a4f;font-weight:600">Correct answer: ${correctAnswer}</div>`:''}`;
+  document.getElementById('chat').appendChild(card);
+  document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+  // Record in mastery
+  if (activeTopic) recordAnswer(activeTopic, isCorrect);
+}
+
+// ── GAP 2: Push Notifications / Study Reminders ───────────────────────────
+const NOTIF_KEY = 'babs_notif_time';
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+function sendNotification(title, body) {
+  if (Notification.permission !== 'granted') return;
+  const notif = new Notification(title, {
+    body,
+    icon: 'https://babspharm1-lgtm.github.io/Mth-tutor-/icon-192.png',
+    badge: 'https://babspharm1-lgtm.github.io/Mth-tutor-/icon-192.png',
+    tag: 'mth-reminder',
+    renotify: true
+  });
+  notif.onclick = () => { window.focus(); notif.close(); };
+}
+
+function scheduleReminder() {
+  // Schedule a reminder for tomorrow at the same time if student hasn't studied
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(now.getHours(), now.getMinutes(), 0, 0);
+  const msUntilTomorrow = tomorrow.getTime() - now.getTime();
+
+  // Store scheduled time
+  localStorage.setItem(NOTIF_KEY, tomorrow.getTime().toString());
+
+  setTimeout(() => {
+    // Only fire if student hasn't studied today
+    const lastStudy = studentData.lastStudyDate;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (lastStudy !== todayStr) {
+      const streak = studentData.streak || 0;
+      const msgs = [
+        { title:'🔥 Streak Alert!', body:`Your ${streak}-day streak is at risk! Open MTH 102 tutor to keep it alive.` },
+        { title:'📚 Study reminder', body:'Mr. BABS is waiting! Come study MTH 102 today.' },
+        { title:'⚡ Daily MTH 102', body:`Don't break your streak! ${streak} days and counting 🔥` },
+      ];
+      const m = msgs[Math.floor(Math.random()*msgs.length)];
+      sendNotification(m.title, m.body);
+    }
+  }, msUntilTomorrow);
+}
+
+// Notification permission + reminder setup
+async function setupNotifications() {
+  const granted = await requestNotificationPermission();
+  if (granted) {
+    scheduleReminder();
+    // Show welcome notification on first session
+    if (studentData.sessions === 1) {
+      setTimeout(() => sendNotification('👋 Welcome to BABSPHARM CLOUD!', 'Notifications are on. I\'ll remind you to study every day!'), 2000);
+    }
+  }
+}
+
+// Show notification prompt chip after welcome
+function showNotifPrompt() {
+  if (!('Notification' in window) || Notification.permission === 'granted') return;
+  setTimeout(() => {
+    const div = document.createElement('div');
+    div.style.cssText = 'margin:0 14px 10px;background:rgba(26,74,122,0.06);border:1px solid rgba(26,74,122,0.2);border-radius:12px;padding:11px 14px;font-size:0.8rem;';
+    div.innerHTML = `<div style="font-family:Syne,sans-serif;font-weight:700;font-size:0.78rem;color:#1a4a7a;margin-bottom:6px;">🔔 Daily Study Reminders</div>
+    <div style="color:var(--muted);margin-bottom:8px;">Turn on notifications so Mr. BABS can remind you to study every day and protect your streak!</div>
+    <button onclick="setupNotifications();this.parentElement.remove();" style="background:#1a1a2e;color:#c9a84c;border:none;border-radius:8px;padding:7px 16px;font-family:Syne,sans-serif;font-weight:700;font-size:0.75rem;cursor:pointer;">🔔 Turn On Reminders</button>
+    <button onclick="this.parentElement.remove();" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;margin-left:10px;">Not now</button>`;
+    document.getElementById('chat').appendChild(div);
+    document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+  }, 3000);
+}
+
 // ── Welcome ───────────────────────────────────────────────────────────────
 setTimeout(() => {
-  appendAI(
-`👋 **Welcome to BABSPHARM CLOUD! I'm Mr. BABS, your MTH 102 Calculus tutor.**
+  const isReturning = studentData.sessions > 1;
+  const weak = getWeakTopics();
+  let welcomeMsg = '';
 
-I will teach you everything in MTH 102 properly — one step at a time, like a real lecturer.
+  if (isReturning) {
+    const total = studentData.totalCorrect + studentData.totalWrong;
+    const pct = total > 0 ? Math.round((studentData.totalCorrect/total)*100) : 0;
+    const streak = studentData.streak || 1;
+    const streakMsg = streak >= 7 ? `🏆 You're on a **${streak}-day streak** — absolutely incredible!` : streak >= 3 ? `🔥 You're on a **${streak}-day streak** — keep it going!` : `🔥 **Day ${streak}** — great to see you back!`;
+    welcomeMsg = `👋 **Welcome back to BABSPHARM CLOUD!**\n\n${streakMsg}\n\n📊 Overall score: **${pct}%** (${studentData.totalCorrect} correct, ${studentData.totalWrong} wrong across ${studentData.sessions} sessions)`;
+    if (weak.length > 0) {
+      welcomeMsg += `\n\n⚠️ **Areas that need more work:**\n${weak.slice(0,3).map(w=>`- ${w.topic} (${w.pct}%)`).join('\n')}`;
+      welcomeMsg += `\n\nI recommend we practise these today. Tap **📝 Practice** and I will target your weak areas automatically.`;
+    } else {
+      welcomeMsg += `\n\n✅ You are doing well across all topics! Keep it up.`;
+    }
+    welcomeMsg += `\n\nTap **📊 My Progress** anytime to see your full breakdown.`;
+  } else {
+    welcomeMsg = `👋 **Welcome to BABSPHARM CLOUD! I'm Mr. BABS, your MTH 102 Calculus tutor.**\n\nI will teach you everything in MTH 102 properly — one step at a time, like a real lecturer.\n\n**MTH 102 covers:**\n📌 Functions & Graphs · Limits & Continuity · Differentiation · Curve Sketching · Integration · Definite Integrals · Areas & Volumes\n\n**Modes:**\n🎓 **Teach Me** — Full lesson on any topic, area by area\n🧮 **Solve Problem** — I verify your working step by step\n📝 **Practice** — Targeted questions based on your weak areas\n🎯 **Exam Prep** — University-style past questions and tips\n⚡ **Summary** — Quick revision notes\n📐 **Formulas** — All formulas in one place\n📊 **My Progress** — Track your mastery per topic\n\n**To begin:** Select your mode then tap any topic above! 📚`;
+  }
 
-**MTH 102 covers:**
-📌 Functions & Graphs · Limits & Continuity · Differentiation · Curve Sketching · Integration · Definite Integrals · Areas & Volumes
-
-**Modes:**
-🎓 **Teach Me** — Full lesson on any topic, area by area
-🧮 **Solve Problem** — Step by step solution with explanation
-📝 **Practice** — Questions with marking and feedback
-🎯 **Exam Prep** — University-style past questions and tips
-⚡ **Summary** — Quick revision notes
-
-**To begin:** Select your mode then tap any topic above! 📚`,
-    ['🌱 Teach me Functions from scratch', 'Teach me Differentiation', 'Teach me Integration', '📖 Start from absolute basics']
+  appendAI(welcomeMsg,
+    isReturning && weak.length > 0
+      ? ['📝 Practice my weak areas', '🎓 Continue learning', '📊 See my progress']
+      : ['🌱 Teach me Functions from scratch', 'Teach me Differentiation', 'Teach me Integration']
   );
+
+  // Setup notifications after welcome
+  if (Notification.permission === 'granted') {
+    setupNotifications();
+  } else {
+    showNotifPrompt();
+  }
 }, 300);
 </script>
 </body>
