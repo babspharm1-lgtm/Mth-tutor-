@@ -6,23 +6,44 @@
 <title>MTH 102 Tutor — BABSPHARM CLOUD</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
-<!-- Firebase compat (works on static sites) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase loads async AFTER page is ready — never blocks UI -->
 <script>
-// Firebase init — wrapped safely so errors don't break the page
-(function() {
+// Firebase loads AFTER page — never blocks UI
+window.firebaseSyncSave = async function() {};
+window.firebaseSyncLoad = async function() { return null; };
+
+function loadFirebase() {
+  return new Promise((resolve) => {
+    // Load app script
+    const s1 = document.createElement('script');
+    s1.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+    s1.onload = () => {
+      // Load firestore script after app loads
+      const s2 = document.createElement('script');
+      s2.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js';
+      s2.onload = () => resolve(true);
+      s2.onerror = () => resolve(false);
+      document.head.appendChild(s2);
+    };
+    s1.onerror = () => resolve(false);
+    document.head.appendChild(s1);
+  });
+}
+
+async function initFirebase() {
   try {
+    const loaded = await loadFirebase();
+    if (!loaded || !window.firebase) return;
     const firebaseConfig = {
       apiKey: "AIzaSyCtwgwMJ9f5Oo7iTBHUkgPNJ4U-BAxlrW8",
       authDomain: "babspharmcloud.firebaseapp.com",
       projectId: "babspharmcloud",
       storageBucket: "babspharmcloud.firebasestorage.app",
       messagingSenderId: "385674572482",
-      appId: "1:385674572482:web:a427125e649fef011b815b",
-      measurementId: "G-ZM6EX0MWZL"
+      appId: "1:385674572482:web:a427125e649fef011b815b"
     };
-    firebase.initializeApp(firebaseConfig);
+    // Avoid duplicate app init
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let deviceId = localStorage.getItem('babs_device_id');
     if (!deviceId) {
@@ -38,12 +59,33 @@
         return snap.exists ? snap.data() : null;
       } catch(e) { return null; }
     };
+    // Now sync student data from cloud
+    const cloud = await window.firebaseSyncLoad();
+    if (cloud) {
+      studentData.totalCorrect = Math.max(studentData.totalCorrect||0, cloud.totalCorrect||0);
+      studentData.totalWrong = Math.max(studentData.totalWrong||0, cloud.totalWrong||0);
+      studentData.sessions = Math.max(studentData.sessions||0, cloud.sessions||0);
+      studentData.streak = Math.max(studentData.streak||0, cloud.streak||0);
+      studentData.longestStreak = Math.max(studentData.longestStreak||0, cloud.longestStreak||0);
+      if (cloud.lastStudyDate) studentData.lastStudyDate = cloud.lastStudyDate;
+      if (cloud.memory && cloud.memory.length > (studentData.memory||[]).length) studentData.memory = cloud.memory;
+      Object.entries(cloud.mastery||{}).forEach(([topic, cd]) => {
+        if (!studentData.mastery[topic]) studentData.mastery[topic] = cd;
+        else {
+          studentData.mastery[topic].correct = Math.max(studentData.mastery[topic].correct||0, cd.correct||0);
+          studentData.mastery[topic].wrong = Math.max(studentData.mastery[topic].wrong||0, cd.wrong||0);
+        }
+      });
+      saveStudentData(studentData);
+      renderStreakBadge();
+      // Update sync dot to green
+      const dot = document.getElementById('sync-dot');
+      if (dot) dot.style.background = '#6fcf97';
+    }
   } catch(e) {
-    // Firebase failed — app still works with localStorage only
-    window.firebaseSyncSave = async function() {};
-    window.firebaseSyncLoad = async function() { return null; };
+    // Firebase failed silently — app runs on localStorage only
   }
-})();
+}
 </script>
 <style>
 :root {
@@ -372,60 +414,25 @@ function saveStudentData(data) {
 }
 
 // Load from Firebase on startup (merge with localStorage)
-async function initStudentData() {
-  let local = loadStudentData();
-  if (window.firebaseSyncLoad) {
-    try {
-      const cloud = await window.firebaseSyncLoad();
-      if (cloud) {
-        // Merge: take the higher values (most progress wins)
-        local.totalCorrect = Math.max(local.totalCorrect||0, cloud.totalCorrect||0);
-        local.totalWrong = Math.max(local.totalWrong||0, cloud.totalWrong||0);
-        local.sessions = Math.max(local.sessions||0, cloud.sessions||0);
-        local.streak = Math.max(local.streak||0, cloud.streak||0);
-        local.longestStreak = Math.max(local.longestStreak||0, cloud.longestStreak||0);
-        if (cloud.lastStudyDate) local.lastStudyDate = cloud.lastStudyDate;
-        if (cloud.memory && cloud.memory.length > (local.memory||[]).length) local.memory = cloud.memory;
-        // Merge mastery per topic
-        Object.entries(cloud.mastery||{}).forEach(([topic, cd]) => {
-          if (!local.mastery[topic]) local.mastery[topic] = cd;
-          else {
-            local.mastery[topic].correct = Math.max(local.mastery[topic].correct||0, cd.correct||0);
-            local.mastery[topic].wrong = Math.max(local.mastery[topic].wrong||0, cd.wrong||0);
-          }
-        });
-        saveStudentData(local);
-        // Show sync indicator
-        document.getElementById('sync-dot') && (document.getElementById('sync-dot').style.background='#6fcf97');
-      }
-    } catch(e) {}
-  }
-  return local;
-}
-
 let studentData = loadStudentData();
 
 // ── Study Streak System ───────────────────────────────────────────────────
 function updateStreak() {
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
   const last = studentData.lastStudyDate || '';
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-
   if (last === today) {
-    // Already studied today — streak unchanged
+    // Already studied today
   } else if (last === yesterday) {
-    // Studied yesterday — extend streak
     studentData.streak = (studentData.streak || 0) + 1;
     studentData.lastStudyDate = today;
     if (studentData.streak > (studentData.longestStreak || 0)) studentData.longestStreak = studentData.streak;
     showStreakToast(studentData.streak);
   } else if (!last) {
-    // First ever session
     studentData.streak = 1;
     studentData.lastStudyDate = today;
     studentData.longestStreak = 1;
   } else {
-    // Streak broken
     studentData.streak = 1;
     studentData.lastStudyDate = today;
   }
@@ -446,21 +453,18 @@ function renderStreakBadge() {
 function showStreakToast(streak) {
   const toast = document.getElementById('streak-toast');
   if (!toast) return;
-  const msgs = {1:'🔥 Day 1 — Great start!', 2:'🔥 2 Days in a row!', 3:'🔥 3-Day Streak! You\'re building a habit!', 5:'🔥 5-Day Streak! Incredible!', 7:'🏆 7-Day Streak! One full week!', 10:'🏆 10-Day Streak! You are unstoppable!', 14:'🏆 2-Week Streak! Legend!'};
+  const msgs = {1:'🔥 Day 1 — Great start!', 2:'🔥 2 Days in a row!', 3:'🔥 3-Day Streak! Building a habit!', 5:'🔥 5-Day Streak! Incredible!', 7:'🏆 7-Day Streak! One full week!', 10:'🏆 10-Day Streak! Unstoppable!', 14:'🏆 2-Week Streak! Legend!'};
   const key = Object.keys(msgs).reverse().find(k => streak >= parseInt(k));
   toast.textContent = key ? msgs[key] : `🔥 ${streak}-Day Streak! Keep going!`;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-// Initialise
+// Initialise streak
 updateStreak();
 
-// Load from Firebase async (updates UI when done)
-initStudentData().then(merged => {
-  studentData = merged;
-  renderStreakBadge();
-});
+// Load Firebase AFTER page is ready — never blocks UI
+window.addEventListener('load', () => setTimeout(initFirebase, 1500));
 
 // Record a correct/wrong answer for mastery tracking
 function recordAnswer(topic, correct) {
@@ -1450,9 +1454,16 @@ async function send(rawText) {
   const typing = addTyping();
 
   try {
+    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || '';
+    if (!GROQ_KEY) {
+      typing.remove();
+      addMsg('ai', '⚠️ No API key found. Please ask your administrator to set the Groq API key.');
+      sendBtn.disabled = false;
+      return;
+    }
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
-      headers:{'Content-Type':'application/json', 'Authorization':'Bearer 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'},
+      headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + GROQ_KEY},
       body: JSON.stringify({
         model:'llama-3.3-70b-versatile',
         max_tokens:1500,
@@ -1558,9 +1569,11 @@ EXPLANATION: [in 1-2 sentences: why it's right/wrong, where the error is if wron
 
 Be strict and mathematically precise. Only say CORRECT if the answer is mathematically equivalent.`;
 
+    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || '';
+    if (!GROQ_KEY) return null;
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + GROQ_KEY},
       body: JSON.stringify({
         model:'llama-3.3-70b-versatile',
         max_tokens:300,
