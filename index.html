@@ -552,7 +552,7 @@ function renderMastery() {
     html += `<div class="mastery-topic">
       <div class="mt-header"><div class="mt-name">${t.label}</div><div class="mt-score ${scoreClass}">${scoreLabel}</div></div>
       <div class="mt-bar"><div class="mt-fill" style="width:${pct||0}%;background:${barColor}"></div></div>
-      <div class="mt-detail">${tot > 0 ? `${d.correct} correct · ${d.wrong} wrong · Last seen: ${d.lastSeen}` : 'No questions attempted yet'}</div>
+      <div class="mt-detail">${tot > 0 ? d.correct + ' correct · ' + d.wrong + ' wrong · Last seen: ' + d.lastSeen : 'No questions attempted yet'}</div>
     </div>`;
   });
   html += `<div style="text-align:center;margin-top:16px"><button onclick="if(confirm('Reset all progress?')){localStorage.removeItem('${STORAGE_KEY}');studentData=loadStudentData();renderMastery();}" style="background:rgba(192,57,43,0.08);color:#c0392b;border:1px solid rgba(192,57,43,0.25);border-radius:10px;padding:8px 18px;font-family:Syne,sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;">Reset My Progress</button></div>`;
@@ -987,7 +987,7 @@ RESPONSE FORMAT — use these tags:
 [WARN]...[/WARN]
 [TIP]...[/TIP]
 [CHECK]...[/CHECK]
-[ANSWER]...[/ANSWER]`;
+[ANSWER]...[/ANSWER]
 
 FULL SYLLABUS KNOWLEDGE:
 
