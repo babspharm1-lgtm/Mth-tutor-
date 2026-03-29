@@ -1475,7 +1475,7 @@ async function send(rawText) {
   const typing = addTyping();
 
   try {
-    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || '';
+    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || localStorage.getItem('mth_admin_groq_key') || '';
     if (!GROQ_KEY) {
       typing.remove();
       addMsg('ai', '⚠️ No API key found. Please ask your administrator to set the Groq API key.');
@@ -1580,7 +1580,7 @@ EXPLANATION: [in 1-2 sentences: why it's right/wrong, where the error is if wron
 
 Be strict and mathematically precise. Only say CORRECT if the answer is mathematically equivalent.`;
 
-    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || '';
+    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || localStorage.getItem('mth_admin_groq_key') || '';
     if (!GROQ_KEY) return null;
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
