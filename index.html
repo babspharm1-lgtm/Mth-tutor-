@@ -464,7 +464,7 @@ function showStreakToast(streak) {
 updateStreak();
 
 // Load Firebase AFTER page is ready — never blocks UI
-window.addEventListener('load', () => setTimeout(initFirebase, 1500));
+// initFirebase called from init() below
 
 // Record a correct/wrong answer for mastery tracking
 function recordAnswer(topic, correct) {
@@ -559,35 +559,86 @@ function renderMastery() {
   body.innerHTML = html;
 }
 
-document.getElementById('mastery-btn').addEventListener('click', () => {
-  renderMastery();
-  document.getElementById('mastery-overlay').classList.add('open');
-});
-document.getElementById('mastery-close').addEventListener('click', () => {
-  document.getElementById('mastery-overlay').classList.remove('open');
-});
-document.getElementById('mastery-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('mastery-overlay'))
-    document.getElementById('mastery-overlay').classList.remove('open');
-});
-
 // ── Level selector ────────────────────────────────────────────────────────
 function selectLevel(el) {
   document.querySelectorAll('.level-option').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
   studentLevel = el.dataset.level;
 }
-// Default select beginner
-document.querySelector('.level-option[data-level="beginner"]').classList.add('selected');
 
 function startWithLevel() {
   const labels = {beginner:'🌱 Beginner', intermediate:'📘 Intermediate', advanced:'🎓 Advanced'};
-  document.getElementById('level-badge').textContent = labels[studentLevel];
-  document.getElementById('level-screen').style.display = 'none';
+  const badge = document.getElementById('level-badge');
+  if (badge) badge.textContent = labels[studentLevel] || '🌱 Beginner';
+  const screen = document.getElementById('level-screen');
+  if (screen) screen.style.display = 'none';
 }
 
+// ── All initialization — runs directly (script is at bottom of body) ─────
+(function init() {
+  // Default select beginner
+  const defOption = document.querySelector('.level-option[data-level="beginner"]');
+  if (defOption) defOption.classList.add('selected');
+
+  // Mastery panel
+  document.getElementById('mastery-btn').onclick = () => { renderMastery(); document.getElementById('mastery-overlay').classList.add('open'); };
+  document.getElementById('mastery-close').onclick = () => document.getElementById('mastery-overlay').classList.remove('open');
+  document.getElementById('mastery-overlay').onclick = e => { if(e.target.id==='mastery-overlay') document.getElementById('mastery-overlay').classList.remove('open'); };
+
+  // History panel
+  document.getElementById('history-btn').onclick = () => document.getElementById('history-overlay').classList.add('open');
+  document.getElementById('history-close').onclick = () => document.getElementById('history-overlay').classList.remove('open');
+  document.getElementById('history-overlay').onclick = e => { if(e.target.id==='history-overlay') document.getElementById('history-overlay').classList.remove('open'); };
+
+  // Formula panel
+  document.getElementById('formula-btn').onclick = () => { document.getElementById('formula-overlay').classList.add('open'); renderFormulas('functions'); };
+  document.getElementById('formula-close').onclick = () => document.getElementById('formula-overlay').classList.remove('open');
+  document.getElementById('formula-overlay').onclick = e => { if(e.target.id==='formula-overlay') document.getElementById('formula-overlay').classList.remove('open'); };
+  document.querySelectorAll('.ftab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderFormulas(tab.dataset.ftopic);
+    };
+  });
+
+  // Mode buttons
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeMode = btn.dataset.mode;
+      const hints = {
+        teach:'Tap any topic pill and I will teach you everything in it, one area at a time. 🎓',
+        solve:'Type or paste your maths problem and I will solve it step by step. 🧮',
+        practice:'Tap a topic and I will give you practice questions to test yourself! 📝',
+        exam:'Tap a topic and I will give you exam tips, key formulas and university-style past questions. 🎯',
+        summary:'Tap a topic and I will give you a complete, compact revision summary. ⚡'
+      };
+      if (hints[activeMode]) appendAI(hints[activeMode]);
+    };
+  });
+
+  // Send button & input
+  document.getElementById('send-btn').onclick = () => send(document.getElementById('user-input').value);
+  document.getElementById('user-input').addEventListener('keydown', e => {
+    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(document.getElementById('user-input').value); }
+  });
+  document.getElementById('user-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 90)+'px';
+  });
+
+  // Render topics, streak, welcome
+  renderTopics();
+  updateStreak();
+  setTimeout(showWelcome, 300);
+
+  // Firebase loads 2 seconds after page — never blocks anything
+  setTimeout(initFirebase, 2000);
+})();
+
 // ── Revision History ──────────────────────────────────────────────────────
-// Each entry: { topic, label, course, subtopicsTotal, subtopicsDone, date, status }
 const revisionHistory = [];
 
 function recordHistory(topicData, subtopicsDone) {
@@ -610,7 +661,6 @@ function renderHistory() {
   const empty = document.getElementById('history-empty');
   if (revisionHistory.length === 0) { empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  // Clear existing items (keep empty div)
   list.querySelectorAll('.history-item').forEach(el => el.remove());
   revisionHistory.forEach(h => {
     const item = document.createElement('div');
@@ -629,17 +679,6 @@ function renderHistory() {
     list.appendChild(item);
   });
 }
-
-document.getElementById('history-btn').addEventListener('click', () => {
-  document.getElementById('history-overlay').classList.add('open');
-});
-document.getElementById('history-close').addEventListener('click', () => {
-  document.getElementById('history-overlay').classList.remove('open');
-});
-document.getElementById('history-overlay').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('history-overlay'))
-    document.getElementById('history-overlay').classList.remove('open');
-});
 
 // ── Formula Panel ─────────────────────────────────────────────────────────
 const FORMULAS = {
@@ -895,24 +934,6 @@ function startTopic(data) {
     appendAI(`We are now on **${data.topic}**. What would you like — should I teach it, solve a problem, or test you? 🎓`);
   }
 }
-
-renderTopics();
-
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeMode = btn.dataset.mode;
-    const hints = {
-      teach:'Tap any topic pill and I will teach you everything in it, one area at a time. 🎓',
-      solve:'Type or paste your maths problem and I will solve it step by step. 🧮',
-      practice:'Tap a topic and I will give you practice questions to test yourself! 📝',
-      exam:'Tap a topic and I will give you exam tips, key formulas and university-style past questions. 🎯',
-      summary:'Tap a topic and I will give you a complete, compact revision summary. ⚡'
-    };
-    appendAI(hints[activeMode]);
-  });
-});
 
 // ── Big system prompt ──────────────────────────────────────────────────────
 const SYSTEM_BASE = `You are Mr. BABS — the finest Calculus lecturer a 100-level Nigerian university student has ever had. You teach MTH 102 (Elementary Mathematics II — Calculus) to pharmacy and science students at BABSPHARM Cloud.
@@ -1529,17 +1550,7 @@ async function send(rawText) {
   if (displayText) inputEl.focus();
 }
 
-sendBtn.addEventListener('click', () => send(inputEl.value));
-inputEl.addEventListener('keydown', e => {
-  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(inputEl.value); }
-});
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 90)+'px';
-});
-
-// ── GAP 1: Mathematical Answer Verification (separate Groq call) ──────────
-// Detects if student's message looks like a maths answer
+// ── GAP 1: Mathematical Answer Verification ───────────────────────────────
 function looksLikeMathsAnswer(text) {
   const mathPatterns = [
     /dy\/dx\s*=/, /f'\(/, /=\s*[-\d]/, /∫/, /lim/, /d\/dx/,
@@ -1676,7 +1687,7 @@ function showNotifPrompt() {
 }
 
 // ── Welcome ───────────────────────────────────────────────────────────────
-setTimeout(() => {
+function showWelcome() {
   const isReturning = studentData.sessions > 1;
   const weak = getWeakTopics();
   let welcomeMsg = '';
@@ -1704,13 +1715,11 @@ setTimeout(() => {
       : ['🌱 Teach me Functions from scratch', 'Teach me Differentiation', 'Teach me Integration']
   );
 
-  // Setup notifications after welcome
-  if (Notification.permission === 'granted') {
-    setupNotifications();
-  } else {
-    showNotifPrompt();
+  if (typeof Notification !== 'undefined') {
+    if (Notification.permission === 'granted') setupNotifications();
+    else showNotifPrompt();
   }
-}, 300);
+}
 </script>
 </body>
 </html>
