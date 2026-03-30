@@ -122,24 +122,20 @@ select:focus{border-color:var(--gold);}
       </div>
     </div>
 
-    <!-- Groq API Key -->
+    <!-- Groq API Keys (6-key rotation) -->
     <div class="card">
-      <div class="card-title">🔑 Groq API Key</div>
-      <div class="card-desc">This key powers Mr. BABS. Get a free key at <strong>console.groq.com</strong>. It is stored securely in your browser and shared to students via this admin panel.</div>
-      <div class="field-group">
-        <label class="field-label">API Key (starts with gsk_…)</label>
-        <div class="key-wrap">
-          <input type="password" class="field-input" id="groq-key" placeholder="gsk_xxxxxxxxxxxxxxxx" style="margin-bottom:0">
-          <button class="key-toggle" onclick="toggleKey()">Show</button>
-        </div>
+      <div class="card-title">🔑 Groq API Keys — Auto Rotation</div>
+      <div class="card-desc">Add up to <strong>6 Groq API keys</strong> from different accounts. The tutor automatically rotates through them — when one hits its rate limit, it switches to the next. Get free keys at <strong>console.groq.com</strong>.</div>
+
+      <div id="keys-list"></div>
+
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-save" onclick="saveAllKeys()">💾 Save All Keys</button>
+        <button class="btn-test" onclick="testAllKeys()">⚡ Test All Keys</button>
       </div>
-      <div class="btn-row">
-        <button class="btn-save" onclick="saveKey()">💾 Save Key</button>
-        <button class="btn-test" onclick="testKey()">⚡ Test Connection</button>
-        <span class="status idle" id="key-status"><span class="status-dot"></span> Not tested</span>
-      </div>
+      <div id="keys-status" style="margin-top:10px;font-size:0.76rem;color:var(--muted);line-height:1.6;"></div>
       <div style="margin-top:12px;background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:10px 13px;font-size:0.76rem;color:#7a6020;line-height:1.5;">
-        ⚠️ <strong>Important:</strong> After saving, the key is stored in this browser's localStorage under <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px;">babspharm_groq_key</code>. Students on the same device will use this key automatically. For students on different devices, you need to enter the key on each device once, or host a key server.
+        💡 <strong>Tip:</strong> Create 6 free Groq accounts using different emails (e.g. yourname+1@gmail.com, +2, +3…). Get one key from each. That gives you <strong>86,400 free requests/day</strong> — enough for hundreds of students!
       </div>
     </div>
 
@@ -214,8 +210,7 @@ select:focus{border-color:var(--gold);}
 
 <script>
 // ── Auth ──────────────────────────────────────────────────────────────────
-const ADMIN_PWD = 'babspharm2024'; // Change this to your own password
-const STORE = 'babspharm_admin';
+const ADMIN_PWD = 'babspharm2024';
 
 function save(k, v) { localStorage.setItem('babspharm_' + k, v); }
 function load(k, def='') { return localStorage.getItem('babspharm_' + k) || def; }
@@ -239,15 +234,92 @@ function doLogout() {
   document.getElementById('pwd').value = '';
 }
 
+// ── 6-Key System ──────────────────────────────────────────────────────────
+const MAX_KEYS = 6;
+
+function renderKeyInputs() {
+  const list = document.getElementById('keys-list');
+  list.innerHTML = '';
+  const saved = loadKeys();
+  for (let i = 0; i < MAX_KEYS; i++) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:10px;';
+    wrap.innerHTML = `
+      <label class="field-label">Key ${i+1} ${i===0?'(Primary)':''}</label>
+      <div class="key-wrap">
+        <input type="password" class="field-input" id="groq-key-${i}" placeholder="${i===0?'Required — gsk_…':'Optional — gsk_…'}" value="${saved[i]||''}" style="margin-bottom:0">
+        <button class="key-toggle" onclick="toggleKeyN(${i})">Show</button>
+      </div>
+      <div id="key-status-${i}" style="font-size:0.72rem;margin-top:4px;color:var(--muted);">${saved[i] ? '● Saved' : '○ Empty'}</div>`;
+    list.appendChild(wrap);
+  }
+}
+
+function toggleKeyN(i) {
+  const inp = document.getElementById('groq-key-' + i);
+  const btn = inp.nextElementSibling;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+}
+
+function loadKeys() {
+  try {
+    const raw = localStorage.getItem('babspharm_groq_keys');
+    return raw ? JSON.parse(raw) : [load('groq_key') || localStorage.getItem('mth_admin_groq_key') || ''];
+  } catch { return []; }
+}
+
+function saveAllKeys() {
+  const keys = [];
+  for (let i = 0; i < MAX_KEYS; i++) {
+    const val = (document.getElementById('groq-key-' + i)?.value || '').trim();
+    if (val) keys.push(val);
+    else keys.push('');
+  }
+  const validKeys = keys.filter(k => k);
+  if (validKeys.length === 0) { toast('⚠️ Enter at least one key'); return; }
+
+  localStorage.setItem('babspharm_groq_keys', JSON.stringify(keys));
+  // Also save primary key in old slots for compatibility
+  save('groq_key', validKeys[0]);
+  localStorage.setItem('mth_admin_groq_key', validKeys[0]);
+  localStorage.setItem('babspharm_groq_key', validKeys[0]);
+
+  // Update status labels
+  for (let i = 0; i < MAX_KEYS; i++) {
+    const el = document.getElementById('key-status-' + i);
+    if (el) el.textContent = keys[i] ? '● Saved' : '○ Empty';
+  }
+  toast(`💾 ${validKeys.length} key${validKeys.length>1?'s':''} saved!`);
+}
+
+async function testAllKeys() {
+  const keys = loadKeys().filter(k => k);
+  if (keys.length === 0) { toast('⚠️ No keys to test'); return; }
+  const statusEl = document.getElementById('keys-status');
+  statusEl.textContent = '⏳ Testing all keys…';
+  const results = [];
+  for (let i = 0; i < keys.length; i++) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + keys[i] },
+        body: JSON.stringify({ model: document.getElementById('groq-model').value, max_tokens: 5, messages: [{ role: 'user', content: 'Hi' }] })
+      });
+      results.push(res.ok ? `✅ Key ${i+1}: Connected` : `❌ Key ${i+1}: Failed`);
+    } catch { results.push(`❌ Key ${i+1}: Network error`); }
+  }
+  statusEl.innerHTML = results.join('<br>');
+  toast(`✅ Tested ${keys.length} keys`);
+}
+
 // ── Load all settings ─────────────────────────────────────────────────────
 function loadAll() {
-  document.getElementById('groq-key').value = load('groq_key') || localStorage.getItem('mth_admin_groq_key') || '';
+  renderKeyInputs();
   document.getElementById('groq-model').value = load('groq_model', 'llama-3.3-70b-versatile');
   document.getElementById('max-tokens').value = load('max_tokens', '1500');
   document.getElementById('teacher-name').value = load('teacher_name', 'Mr. BABS');
   document.getElementById('uni-name').value = load('uni_name', 'BABSPHARM CLOUD');
-  const ks = load('key_status', 'idle');
-  setStatus(ks);
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────
@@ -256,51 +328,6 @@ function toast(msg='✓ Saved!') {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
-}
-
-// ── Key functions ─────────────────────────────────────────────────────────
-function toggleKey() {
-  const inp = document.getElementById('groq-key');
-  const btn = inp.nextElementSibling;
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
-}
-
-function saveKey() {
-  const key = document.getElementById('groq-key').value.trim();
-  if (!key) { toast('⚠️ Enter a key first'); return; }
-  save('groq_key', key);
-  // Also save with old key name for compatibility
-  localStorage.setItem('mth_admin_groq_key', key);
-  toast('🔑 API Key saved!');
-}
-
-function setStatus(s) {
-  const el = document.getElementById('key-status');
-  if (s === 'ok') { el.className='status ok'; el.innerHTML='<span class="status-dot"></span> Connected ✓'; }
-  else if (s === 'fail') { el.className='status fail'; el.innerHTML='<span class="status-dot"></span> Failed — check key'; }
-  else { el.className='status idle'; el.innerHTML='<span class="status-dot"></span> Not tested'; }
-  save('key_status', s);
-}
-
-async function testKey() {
-  const key = document.getElementById('groq-key').value.trim();
-  if (!key) { toast('⚠️ Enter a key first'); return; }
-  setStatus('idle');
-  toast('⏳ Testing…');
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({
-        model: document.getElementById('groq-model').value,
-        max_tokens: 5,
-        messages: [{ role: 'user', content: 'Hi' }]
-      })
-    });
-    if (res.ok) { setStatus('ok'); toast('✅ Connection successful!'); }
-    else { setStatus('fail'); toast('❌ Key rejected by Groq'); }
-  } catch { setStatus('fail'); toast('❌ Network error'); }
 }
 
 // ── Model ─────────────────────────────────────────────────────────────────
@@ -326,6 +353,7 @@ function copyLink(url) {
 function resetAll() {
   if (!confirm('Reset all admin settings?')) return;
   ['groq_key','groq_model','max_tokens','teacher_name','uni_name','key_status'].forEach(k => localStorage.removeItem('babspharm_' + k));
+  localStorage.removeItem('babspharm_groq_keys');
   loadAll();
   toast('🔄 Reset done');
 }

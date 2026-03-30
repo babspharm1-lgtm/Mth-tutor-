@@ -1475,7 +1475,7 @@ async function send(rawText) {
   const typing = addTyping();
 
   try {
-    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || localStorage.getItem('mth_admin_groq_key') || '';
+    const GROQ_KEY = getNextKey();
     if (!GROQ_KEY) {
       typing.remove();
       addMsg('ai', '⚠️ No API key found. Please ask your administrator to set the Groq API key.');
@@ -1492,6 +1492,15 @@ async function send(rawText) {
       })
     });
     const data = await res.json();
+    // Auto-rotate key if rate limited
+    if (res.status === 429) {
+      rotateKey();
+      typing.remove();
+      addMsg('ai', '⏳ One moment — switching to backup key and retrying…');
+      sendBtn.disabled = false;
+      setTimeout(() => send(rawText), 1000);
+      return;
+    }
     const reply = data.choices?.[0]?.message?.content || 'Something went wrong. Please try again.';
     typing.remove();
     addMsg('ai', reply);
@@ -1550,7 +1559,37 @@ async function send(rawText) {
   if (displayText) inputEl.focus();
 }
 
-// ── GAP 1: Mathematical Answer Verification ───────────────────────────────
+// ── Key Rotation System ───────────────────────────────────────────────────
+let currentKeyIndex = 0;
+
+function getGroqKeys() {
+  try {
+    const raw = localStorage.getItem('babspharm_groq_keys');
+    if (raw) {
+      const keys = JSON.parse(raw).filter(k => k && k.trim());
+      if (keys.length > 0) return keys;
+    }
+  } catch {}
+  // Fallback to single key
+  const single = localStorage.getItem('babspharm_groq_key') ||
+                 localStorage.getItem('mth_admin_groq_key') || '';
+  return single ? [single] : [];
+}
+
+function getNextKey() {
+  const keys = getGroqKeys();
+  if (keys.length === 0) return '';
+  const key = keys[currentKeyIndex % keys.length];
+  return key;
+}
+
+function rotateKey() {
+  const keys = getGroqKeys();
+  if (keys.length > 1) {
+    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+    console.log(`Rotated to key ${currentKeyIndex + 1} of ${keys.length}`);
+  }
+}
 function looksLikeMathsAnswer(text) {
   const mathPatterns = [
     /dy\/dx\s*=/, /f'\(/, /=\s*[-\d]/, /∫/, /lim/, /d\/dx/,
@@ -1580,7 +1619,7 @@ EXPLANATION: [in 1-2 sentences: why it's right/wrong, where the error is if wron
 
 Be strict and mathematically precise. Only say CORRECT if the answer is mathematically equivalent.`;
 
-    const GROQ_KEY = localStorage.getItem('babspharm_groq_key') || localStorage.getItem('mth_admin_groq_key') || '';
+    const GROQ_KEY = getNextKey();
     if (!GROQ_KEY) return null;
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
